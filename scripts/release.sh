@@ -113,9 +113,10 @@ See \`INSTALL.txt\` inside the tarball (or README). Needs GTK3, \`xdotool\`, and
 
 ### Notes
 
-- X11 only (insert via \`xdotool type\`)
-- Multi-pick stays open; Esc / click-outside to hide
-- Default toggle shortcut: **Win+.** (configure in LXQt / Openbox)
+- X11 only — insert via xclip + \`windowfocus\` Ctrl+V (Brave-safe; clears clipboard after)
+- Multi-pick stays open; Esc / click-outside / Alt+Tab to hide
+- Modular \`src/{ui,model,insert,platform}\` + \`make test\`
+- Default toggle shortcut: **Win+.** (configure in LXQt **and** Openbox)
 EOF
 
 # Create tag locally if missing, push tag, then release

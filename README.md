@@ -132,7 +132,8 @@ systemctl --user restart emoji-picker.service
 
 Then bind **Super+Period** — see [docs/SHORTCUTS.md](docs/SHORTCUTS.md).
 
-Maintainer note: ship a release with `./scripts/release.sh 0.1.0 --publish`
+Maintainer note: ship a release with `./scripts/release.sh 0.2.0 --publish`
+
 (or push a `v*` tag and let `[.github/workflows/release.yml](.github/workflows/release.yml)` build it).
 
 ## Usage
