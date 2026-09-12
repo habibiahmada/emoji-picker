@@ -230,17 +230,11 @@ Emoji names and glyphs are derived from Unicode’s `emoji-test.txt` (fetched at
 
 ## Thanks
 
-Terima kasih kepada semua yang berkontribusi pada proyek ini.
+Thanks to everyone who contributes to this project.
 
 <p align="center">
   <a href="https://github.com/habibiahmada/emoji-picker/graphs/contributors">
     <img src="https://contrib.rocks/image?repo=habibiahmada/emoji-picker" alt="Contributors" />
-  </a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/habibiahmada">
-    <img src="https://github.com/habibiahmada.png?size=96" width="96" height="96" alt="habibiahmada" style="border-radius: 50%;" />
   </a>
 </p>
 
