@@ -4,7 +4,9 @@ Violate only if the user explicitly asks.
 
 1. Regenerate emoji tables with `make data`; **never** hand-edit `src/generated/`.
 2. Keep insert targeting the **pre-picker** X11 window (`emoji_insert_set_target`).
-3. Keep multi-pick: **do not** auto-hide on emoji click unless the user requests it.
+3. Keep multi-pick: picker stays visible on emoji click (no blink). Ungrab
+   before paste; clear CLIPBOARD after paste. If Brave freezes, fall back to
+   brief hide. Close for good only on Esc / outside / Alt+Tab.
 4. Prefer C/GTK3; do **not** introduce Electron, Flatpak, or a Python UI for the resident picker.
 5. After install changes: `systemctl --user restart emoji-picker.service`.
 6. Shortcut changes: update Openbox **and** LXQt (or instruct the GUI), plus `docs/SHORTCUTS.md`.

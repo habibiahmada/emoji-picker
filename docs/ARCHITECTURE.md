@@ -16,20 +16,36 @@ Think of three moving parts:
                                                    │ click emoji
                                                    ▼
                                       ┌──────────────────────────┐
-                                      │ clipboard ← glyph        │
-                                      │ xdotool windowactivate   │
-                                      │   <saved xid> + Ctrl+V   │
+                                      │ xclip CLIPBOARD+PRIMARY  │
+                                      │ (user presses Ctrl+V)    │
                                       └──────────────────────────┘
 ```
 
-## Where the emoji list comes from
+## Source layout
 
-1. `scripts/fetch-unicode-emoji.sh` downloads Unicode `emoji-test.txt`.
-2. `scripts/generate_emoji_data.py` keeps `fully-qualified` lines, groups by
-   `# group:`, and writes `src/generated/emoji_data.{c,h}`.
-3. `popup.c` builds tabs (history / all / categories), search, and the button pool.
+```
+src/
+  main.c                 # daemon + socket IPC
+  ui/                    # GTK window, grid, dismiss
+  model/                 # search, hits, history
+  insert/                # clipboard paste into target app
+  platform/              # X11 helpers
+  generated/             # make data — never hand-edit
+tests/                   # make test
+```
 
-Never edit `src/generated/` by hand — run `make data`.
+| Module | Role |
+|--------|------|
+| `ui/popup.c` | Window shell, insert UX orchestration |
+| `ui/picker_grid.c` | Button pool, CSS, infinite scroll |
+| `ui/picker_dismiss.c` | Esc / outside / Alt+Tab dismiss poll |
+| `model/emoji_model.c` | Hits list, indexes, tab/search collect |
+| `model/search_query.c` | Pure tokenize / name-match helpers |
+| `model/history.c` | Recent picks on disk |
+| `insert/insert.c` | xclip + windowfocus Ctrl+V + clear clipboard |
+| `platform/x11_util.c` | Active window / toplevel helpers |
+
+Run unit tests: `make test`.
 
 ## IPC
 
@@ -42,9 +58,9 @@ still open a one-shot window if bind fails.
 
 ## Insert path
 
-When the popup is shown, the code remembers the focused X11 window id, then on
-click: set clipboard → activate that window → send Ctrl+V → reclaim focus so you
-can pick another emoji. That is why multi-pick works without closing the popup.
+On emoji click: defer past GTK grab, keep picker visible (`windowfocus` + Ctrl+V,
+no `windowactivate`). Clipboard cleared ~450ms after paste. Brave freezes if paste
+runs under a pointer grab or with raise/blink focus fights.
 
 ## Why GTK3
 

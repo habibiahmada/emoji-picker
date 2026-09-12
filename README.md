@@ -4,7 +4,7 @@
 ![Platform](https://img.shields.io/badge/platform-Linux%20X11-green.svg)
 ![Built with](https://img.shields.io/badge/built%20with-C%20%2B%20GTK3-orange.svg)
 
-**Win+.** → pick emoji → paste into the app you were already using.
+**Win+.** → pick emoji → inserts into the app you were already using.
 
 A tiny **C + GTK3** Unicode emoji popup for Linux **X11** (Lubuntu/LXQt and friends).
 No Electron. No Flatpak tax. A warm daemon so the shortcut feels instant.
@@ -25,8 +25,8 @@ focused before** the picker opened — so you can keep multi-picking without fig
 - Search by English name (`smile`, `fire`, `cat`, …)
 - Category tabs + recent history
 - Popup near the pointer; skip taskbar; Esc / click-outside to dismiss
-- Stays open for multi-pick (Windows-like)
-- Inserts into the previously focused window by typing (no clipboard)
+- Stays open for multi-pick (closes on Esc / outside / typing / Alt+Tab)
+- Inserts via clipboard into the pre-picker window; clears clipboard after paste
 - Daemon + Unix socket: `emoji-picker --toggle` from a global shortcut
 
 
@@ -84,7 +84,7 @@ emoji-picker --toggle
 Runtime packages (Debian/Ubuntu/Lubuntu):
 
 ```bash
-sudo apt install libgtk-3-0 xdotool fonts-noto-color-emoji
+sudo apt install libgtk-3-0 xdotool fonts-noto-color-emoji xclip
 ```
 
 
@@ -100,7 +100,7 @@ sudo apt install build-essential pkg-config libgtk-3-dev libx11-dev
 **Runtime**
 
 ```bash
-sudo apt install xdotool fonts-noto-color-emoji
+sudo apt install xdotool fonts-noto-color-emoji xclip
 ```
 
 Optional for fetching Unicode data: `curl`, `python3`.
@@ -177,23 +177,19 @@ Pin a version: `UNICODE_VER=15.1 make data`.
 
 ```
 emoji-picker/
-├── .agent/                 # agent context + rules (single source of truth)
-├── AGENTS.md / CLAUDE.md   # thin stubs → .agent/
-├── README.md
-├── Makefile
-├── pack/emoji-picker.service
-├── scripts/                # fetch + generate Unicode tables
+├── .agent/
+├── Makefile                # make / make test / make install
+├── pack/
+├── scripts/
+├── tests/
 ├── src/
 │   ├── main.c              # daemon, socket IPC
-│   ├── popup.c             # GTK UI
-│   ├── insert.c            # xdotool type into previous window
-│   ├── history.c           # recent picks
+│   ├── ui/                 # GTK shell, grid, dismiss
+│   ├── model/              # search, hits, history
+│   ├── insert/             # clipboard paste into apps
+│   ├── platform/           # X11 helpers
 │   └── generated/          # DO NOT hand-edit
 └── docs/
-    ├── screenshots/
-    ├── ARCHITECTURE.md
-    ├── DEVELOPMENT.md
-    └── SHORTCUTS.md
 ```
 
 
@@ -209,8 +205,9 @@ make uninstall
 
 ## Limitations
 
-- **X11 only** (`xdotool` + GTK on X). Wayland needs a different insert path.
-- Target app must accept simulated typing (`xdotool type`).
+- **X11 only** (GTK + xclip on X). Wayland needs a different path.
+- Chromium needs clipboard paste (Unicode typing is ignored); insert uses
+  `windowfocus` + Ctrl+V after releasing the GTK click grab.
 - Skin-tone variants are omitted from the grid (base glyphs) to keep RAM/UI light.
 
 

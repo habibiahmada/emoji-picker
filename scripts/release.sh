@@ -70,7 +70,7 @@ Quick install (user-local):
   emoji-picker --toggle
 
 Runtime deps (Debian/Ubuntu/Lubuntu):
-  sudo apt install libgtk-3-0 xdotool fonts-noto-color-emoji
+  sudo apt install libgtk-3-0 xdotool fonts-noto-color-emoji xclip
 
 Bind Win+. (Meta+period) — see README.md / docs/SHORTCUTS.md
 EOF

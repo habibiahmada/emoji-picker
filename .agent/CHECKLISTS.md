@@ -2,9 +2,11 @@
 
 ## Insert / paste
 
-- [ ] Still targets previous X11 window id
-- [ ] Works while picker stays visible
-- [ ] Does not require hiding the popup
+- [ ] Defer insert; **ungrab**; keep_above stays on (no blink / no activate)
+- [ ] `windowfocus` + Ctrl+V; clear CLIPBOARD ~450ms later
+- [ ] Brave: emoji appears, no freeze, no visual blink, clipboard empty after
+- [ ] If paste fails without raise: revisit; if Brave freezes: brief hide fallback
+- [ ] If Brave was already frozen: restart once, then retest
 
 ## Emoji set
 

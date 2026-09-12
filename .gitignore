@@ -1,5 +1,8 @@
 # Build artifacts
 emoji-picker
+test_search_query
+test_history
+test_emoji_model
 *.o
 dist/
 

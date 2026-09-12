@@ -22,13 +22,18 @@ toggles instantly, multi-pick without closing, paste into the **pre-picker** win
 | Concern | Location |
 |---------|----------|
 | Emoji glyphs + names | `data/emoji-test.txt` → `scripts/generate_emoji_data.py` → `src/generated/*` |
-| UI | `src/popup.c` |
-| Recent history | `src/history.c` → `~/.local/share/emoji-picker/history` |
-| Insert into apps | `src/insert.c` (clipboard + `xdotool` to **previous** window) |
-| Daemon / IPC | `src/main.c` — Unix datagram `$XDG_RUNTIME_DIR/emoji-picker.sock` |
-| User unit | `pack/emoji-picker.service` → `~/.config/systemd/user/` |
+| UI shell | `src/ui/popup.c` |
+| Grid / CSS | `src/ui/picker_grid.c` |
+| Dismiss poll | `src/ui/picker_dismiss.c` |
+| Search + hits | `src/model/emoji_model.c` + `src/model/search_query.c` |
+| X11 helpers | `src/platform/x11_util.c` |
+| Recent history | `src/model/history.c` → `~/.local/share/emoji-picker/history` |
+| Insert into apps | `src/insert/insert.c` |
+| Daemon / IPC | `src/main.c` |
+| Unit tests | `tests/` — `make test` |
+| User unit | `pack/emoji-picker.service` |
 | Installed binary | `~/.local/bin/emoji-picker` |
-| Agent rules / context | **`.agent/`** (this pack) |
+| Agent rules / context | **`.agent/`** |
 
 **Never hand-edit** `src/generated/emoji_data.{h,c}`. Regenerate with `make data`.
 
@@ -36,7 +41,7 @@ toggles instantly, multi-pick without closing, paste into the **pre-picker** win
 
 ```bash
 cd /home/habibiahmada/Projects/emoji-picker   # adjust if relocated
-make data && make && make install
+make data && make && make test && make install
 systemctl --user daemon-reload
 systemctl --user restart emoji-picker.service
 # smoke:
@@ -52,9 +57,13 @@ sed -i 's/\r$//' scripts/*
 ## UX contracts (do not break without asking)
 
 1. **Win+.** (Meta+period) toggles the picker — primary user binding.
-2. Picker **stays open** after an emoji click (multi-insert).
-3. Insert goes to the **window focused before** the picker opened, not the search box.
-4. Esc / focus-out hides the window; process remains as daemon.
+2. Picker **stays visible** on emoji click (multi-pick). Close only via Esc /
+   click-outside / focus-out when the user leaves the picker.
+3. On emoji click: defer until GTK grab is gone; picker stays mapped with
+   keep_above (no blink). Refuse accept_focus briefly; `windowfocus` + Ctrl+V
+   (never windowactivate / hide). Clear CLIPBOARD ~450ms after paste.
+4. Esc / click-outside / typing in the target app / Alt+Tab to another app hides
+   the window (dismiss poll — not focus-out alone). Process remains as daemon.
 5. Skip taskbar / utility window; place near pointer.
 6. Search matches Unicode English names (stored lowercase).
 7. History tab shows recent picks when available; do not remove casually.
