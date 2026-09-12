@@ -1,5 +1,9 @@
 # emoji-picker
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Linux%20X11-green.svg)](https://github.com/habibiahmada/emoji-picker)
+[![Built with](https://img.shields.io/badge/built%20with-C%20%2B%20GTK3-orange.svg)](https://github.com/habibiahmada/emoji-picker)
+
 **Win+.** → pick emoji → paste into the app you were already using.
 
 A tiny **C + GTK3** Unicode emoji popup for Linux **X11** (Lubuntu/LXQt and friends).
@@ -173,7 +177,18 @@ make uninstall
 - Target app must accept simulated typing (`xdotool type`).
 - Skin-tone variants are omitted from the grid (base glyphs) to keep RAM/UI light.
 
-## License / contributing
+## Contributing
 
-Local personal tool — keep it small. Agent contributors: read [`.agent/README.md`](.agent/README.md) first.
-Do not add yourself to a contributors list unless the maintainer asks.
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Security reports: [SECURITY.md](SECURITY.md).
+
+Agent / automation notes: [AGENTS.md](AGENTS.md).
+
+## License
+
+This project is released under the [MIT License](LICENSE).
+
+Emoji names and glyphs are derived from Unicode’s `emoji-test.txt` (fetched at
+`make data`). Unicode data files are subject to the
+[Unicode License](https://www.unicode.org/license.txt).
+
