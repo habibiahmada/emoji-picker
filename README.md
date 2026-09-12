@@ -220,3 +220,29 @@ Emoji names and glyphs are derived from Unicode’s `emoji-test.txt` (fetched at
 `make data`). Unicode data files are subject to the
 [Unicode License](https://www.unicode.org/license.txt).
 
+## Author
+
+**Habibi Ahmad Aziz**
+
+- Portfolio: [habibiahmada.dev](https://habibiahmada.dev)
+- Email: [contact@habibiahmada.dev](mailto:contact@habibiahmada.dev)
+- GitHub: [@habibiahmada](https://github.com/habibiahmada)
+
+## Thanks
+
+Terima kasih kepada semua yang berkontribusi pada proyek ini.
+
+<p align="center">
+  <a href="https://github.com/habibiahmada/emoji-picker/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=habibiahmada/emoji-picker" alt="Contributors" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/habibiahmada">
+    <img src="https://github.com/habibiahmada.png?size=96" width="96" height="96" alt="habibiahmada" style="border-radius: 50%;" />
+  </a>
+</p>
+
+<p align="center"><sub>Made with care for low-RAM Linux desktops.</sub></p>
+
