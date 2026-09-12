@@ -70,10 +70,33 @@ Picker on the desktop (LXQt):
 
 ## Quick start
 
+### Option A — GitHub Release (binary)
+
+1. Download the latest `emoji-picker-*-linux-x86_64.tar.gz` from
+   [Releases](https://github.com/habibiahmada/emoji-picker/releases).
+2. Unpack and follow `INSTALL.txt` (copies binary to `~/.local/bin` + user systemd unit).
+
+```bash
+tar -xzf emoji-picker-*-linux-x86_64.tar.gz
+cd emoji-picker-*-linux-x86_64
+# see INSTALL.txt — then:
+systemctl --user daemon-reload
+systemctl --user enable --now emoji-picker.service
+emoji-picker --toggle
+```
+
+Runtime packages (Debian/Ubuntu/Lubuntu):
+
+```bash
+sudo apt install libgtk-3-0 xdotool fonts-noto-color-emoji
+```
+
+### Option B — Build from source
+
 **Build deps**
 
 ```bash
-sudo apt install build-essential pkg-config libgtk-3-dev
+sudo apt install build-essential pkg-config libgtk-3-dev libx11-dev
 ```
 
 **Runtime**
@@ -87,7 +110,8 @@ Optional for fetching Unicode data: `curl`, `python3`.
 **Install**
 
 ```bash
-cd ~/Projects/emoji-picker   # or your clone path
+git clone https://github.com/habibiahmada/emoji-picker.git
+cd emoji-picker
 make data                    # download Unicode + generate src/generated/
 make
 make install                 # ~/.local/bin/emoji-picker + user systemd unit
@@ -109,6 +133,9 @@ systemctl --user restart emoji-picker.service
 ```
 
 Then bind **Super+Period** — see [docs/SHORTCUTS.md](docs/SHORTCUTS.md).
+
+Maintainer note: ship a release with `./scripts/release.sh 0.1.0 --publish`
+(or push a `v*` tag and let [`.github/workflows/release.yml`](.github/workflows/release.yml) build it).
 
 ## Usage
 
@@ -139,6 +166,7 @@ Pin a version: `UNICODE_VER=15.1 make data`.
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Day-to-day hacking |
 | [docs/SHORTCUTS.md](docs/SHORTCUTS.md) | Win+. on LXQt + Openbox |
 | [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) | How screenshots were taken |
+| [docs/RELEASES.md](docs/RELEASES.md) | GitHub Releases publish/install |
 | [`.agent/`](.agent/) | **All** AI-agent rules & context (Cursor, Antigravity, Kiro, Copilot, Claude, Graphify) |
 
 ## Project layout

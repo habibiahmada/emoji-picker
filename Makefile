@@ -8,7 +8,7 @@ BINDIR ?= $(PREFIX)/bin
 SRC := src/main.c src/popup.c src/insert.c src/history.c src/generated/emoji_data.c
 OBJ := $(SRC:.c=.o)
 
-.PHONY: all clean install uninstall data
+.PHONY: all clean install uninstall data dist
 
 all: emoji-picker
 
@@ -21,6 +21,13 @@ src/generated/emoji_data.c src/generated/emoji_data.h:
 
 emoji-picker: $(SRC) src/generated/emoji_data.h
 	$(CC) $(CFLAGS) -o $@ $(SRC) $(GTK) $(X11)
+
+# Build versioned tarball under dist/ (does not publish).
+# Usage: make dist VERSION=0.1.0
+dist:
+	@test -n "$(VERSION)" || (echo "Usage: make dist VERSION=0.1.0" >&2; exit 2)
+	chmod +x scripts/release.sh
+	./scripts/release.sh $(VERSION)
 
 install: emoji-picker
 	install -d $(BINDIR)
@@ -36,3 +43,4 @@ uninstall:
 
 clean:
 	rm -f emoji-picker $(OBJ)
+	rm -rf dist

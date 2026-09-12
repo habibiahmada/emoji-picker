@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libgtk-3-dev libx11-dev
+
+      - name: Build release tarball
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          chmod +x scripts/release.sh
+          ./scripts/release.sh "$VERSION"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ARCH_LABEL=x86_64
+          TARBALL="dist/emoji-picker-${VERSION}-linux-${ARCH_LABEL}.tar.gz"
+          SUM="dist/emoji-picker-${VERSION}-linux-${ARCH_LABEL}.sha256"
+          NOTES="dist/release-notes-${VERSION}.md"
+          cat > "$NOTES" <<EOF
+          ## emoji-picker v${VERSION}
+
+          Lightweight Unicode emoji popup for Linux **X11** (C + GTK3).
+
+          ### Install
+
+          Unpack the \`.tar.gz\` and follow \`INSTALL.txt\` (user-local binary + systemd user unit).
+
+          Runtime deps (Debian/Ubuntu): \`libgtk-3-0\`, \`xdotool\`, \`fonts-noto-color-emoji\`.
+          EOF
+          # trim leading spaces from heredoc above
+          sed -i 's/^          //' "$NOTES"
+
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release upload "v${VERSION}" "$TARBALL" "$SUM" --clobber
+          else
+            gh release create "v${VERSION}" "$TARBALL" "$SUM" \
+              --title "emoji-picker v${VERSION}" \
+              --notes-file "$NOTES" \
+              --latest
+          fi

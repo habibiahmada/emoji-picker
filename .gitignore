@@ -1,6 +1,7 @@
 # Build artifacts
 emoji-picker
 *.o
+dist/
 
 # Fetched Unicode dump (regenerate with make data)
 data/emoji-test.txt
