@@ -1,0 +1,13 @@
+# Build artifacts
+emoji-picker
+*.o
+
+# Fetched Unicode dump (regenerate with make data)
+data/emoji-test.txt
+
+# Graphify generated knowledge graph
+graphify-out/
+
+# Editor
+.DS_Store
+*~

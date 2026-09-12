@@ -1,0 +1,13 @@
+[Unit]
+Description=Lightweight Unicode emoji picker (GTK3)
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/emoji-picker --daemon
+Restart=on-failure
+RestartSec=2
+Environment=DISPLAY=:0
+
+[Install]
+WantedBy=default.target
