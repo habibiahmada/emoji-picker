@@ -2,6 +2,9 @@
 
 Primary binding: **Super+Period** (Win+.).
 
+> [!TIP]
+> The `./install.sh` script automatically configures and reloads this shortcut for Openbox, LXQt, GNOME, XFCE, and i3/Sway. This document provides manual reference details.
+
 That key should run:
 
 ```bash

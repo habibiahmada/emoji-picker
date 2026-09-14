@@ -64,80 +64,99 @@ Picker on the desktop (LXQt):
 
 ## Quick start
 
+### One-step installation (recommended)
 
-
-### Option A — GitHub Release (binary)
-
-1. Download the latest `emoji-picker-*-linux-x86_64.tar.gz` from
-  [Releases](https://github.com/habibiahmada/emoji-picker/releases).
-2. Unpack and follow `INSTALL.txt` (copies binary to `~/.local/bin` + user systemd unit).
-
-```bash
-tar -xzf emoji-picker-*-linux-x86_64.tar.gz
-cd emoji-picker-*-linux-x86_64
-# see INSTALL.txt — then:
-systemctl --user daemon-reload
-systemctl --user enable --now emoji-picker.service
-emoji-picker --toggle
-```
-
-Runtime packages (Debian/Ubuntu/Lubuntu):
-
-```bash
-sudo apt install libgtk-3-0 xdotool fonts-noto-color-emoji xclip
-```
-
-
-
-### Option B — Build from source
-
-**Build deps**
-
-```bash
-sudo apt install build-essential pkg-config libgtk-3-dev libx11-dev
-```
-
-**Runtime**
-
-```bash
-sudo apt install xdotool fonts-noto-color-emoji xclip
-```
-
-Optional for fetching Unicode data: `curl`, `python3`.
-
-**Install**
+Clone and run the installer:
 
 ```bash
 git clone https://github.com/habibiahmada/emoji-picker.git
 cd emoji-picker
-make data                    # download Unicode + generate src/generated/
-make
-make install                 # ~/.local/bin/emoji-picker + user systemd unit
-systemctl --user daemon-reload
-systemctl --user enable --now emoji-picker.service
+./install.sh
 ```
 
-If the window never appears under systemd (common on LXQt), pin display env:
+**That's it! 🎉** Press **Win + .** (`Super+Period`) anywhere to toggle the emoji picker.
+
+#### What `./install.sh` does automatically:
+1. **Checks dependencies** (runtime & build) and detects your package manager if anything is missing.
+2. **Builds the binary** if not already compiled (`make data && make`).
+3. **Installs binary** to `~/.local/bin/emoji-picker`.
+4. **Configures & starts systemd user service** with proper X11 `DISPLAY` and `XAUTHORITY` drop-in configuration.
+5. **Configures global shortcut (Win+.)** automatically for your desktop environment:
+   - **LXQt**: registers `Meta+period` in `globalkeyshortcuts.conf` and reloads `lxqt-globalkeysd`.
+   - **Openbox**: adds `<keybind key="W-period">` to `rc.xml` and triggers `openbox --reconfigure`.
+   - **GNOME**: adds custom keybinding via `gsettings`.
+   - **XFCE**: configures `<Super>period` via `xfconf-query`.
+   - **i3 / Sway**: appends shortcut to config and reloads.
+6. **Verifies installation** and ensures the warm daemon is active.
+
+---
+
+### Pre-built binary from Releases
+
+If you downloaded a release from [GitHub Releases](https://github.com/habibiahmada/emoji-picker/releases):
 
 ```bash
-mkdir -p ~/.config/systemd/user/emoji-picker.service.d
-cat > ~/.config/systemd/user/emoji-picker.service.d/display.conf <<EOF
-[Service]
-Environment=DISPLAY=${DISPLAY}
-Environment=XAUTHORITY=${XAUTHORITY:-$HOME/.Xauthority}
-EOF
-systemctl --user daemon-reload
-systemctl --user restart emoji-picker.service
+tar -xzf emoji-picker-*-linux-x86_64.tar.gz
+cd emoji-picker-*-linux-x86_64
+./install.sh
 ```
 
-Then bind **Super+Period** — see [docs/SHORTCUTS.md](docs/SHORTCUTS.md).
+<details>
+<summary>Manual build & advanced options</summary>
 
-Maintainer note: ship a release with `./scripts/release.sh 0.2.0 --publish`
+**Installer options:**
+```bash
+./install.sh --help           # Show all options
+./install.sh --dry-run        # Preview actions without modifying anything
+./install.sh --check          # Check requirements and dependencies only
+./install.sh --no-shortcut    # Skip desktop shortcut registration
+./install.sh --no-service     # Skip systemd user service setup
+./install.sh --uninstall      # Clean uninstallation
+./install.sh --prefix=/opt    # Custom install prefix (default: ~/.local)
+```
 
-(or push a `v*` tag and let `[.github/workflows/release.yml](.github/workflows/release.yml)` build it).
+**Dependencies:**
+- Debian / Ubuntu / Lubuntu:
+  ```bash
+  sudo apt install build-essential pkg-config libgtk-3-dev libx11-dev xdotool fonts-noto-color-emoji xclip
+  ```
+- Fedora:
+  ```bash
+  sudo dnf install gcc make pkg-config gtk3-devel libX11-devel xdotool google-noto-color-emoji-fonts xclip
+  ```
+- Arch Linux / Manjaro:
+  ```bash
+  sudo pacman -S --needed base-devel gtk3 libx11 xdotool noto-fonts-emoji xclip
+  ```
+
+**Manual compilation with Makefile:**
+```bash
+make data                     # Download Unicode & generate data tables
+make                          # Compile binary
+make install                  # Runs ./install.sh
+```
+
+See [docs/SHORTCUTS.md](docs/SHORTCUTS.md) for manual shortcut configuration details.
+</details>
+
+Maintainer note: ship a release with `./scripts/release.sh 0.3.0 --publish` (or push a `v*` tag).
+
+## Updating
+
+Check for updates or upgrade to the newest release anytime:
+
+```bash
+# Check if an update is available:
+./install.sh --check-update
+
+# Upgrade to the latest version:
+./install.sh --update
+# (or 'make update')
+```
+
+This automatically checks Git origin (or GitHub releases for standalone installs), refreshes Unicode data, recompiles, re-installs, and restarts the background daemon.
 
 ## Usage
-
 
 | Command                          | Meaning                                   |
 | -------------------------------- | ----------------------------------------- |
@@ -145,7 +164,8 @@ Maintainer note: ship a release with `./scripts/release.sh 0.2.0 --publish`
 | `emoji-picker --daemon`          | Start hidden (systemd)                    |
 | `emoji-picker --toggle`          | Show/hide (shortcut target)               |
 | `emoji-picker --show` / `--hide` | Explicit show or hide                     |
-
+| `emoji-picker --version`         | Print version information                 |
+| `emoji-picker --help`            | Print CLI help and options                |
 
 Esc or focus loss hides the window; the process keeps running.
 
@@ -154,7 +174,6 @@ Esc or focus loss hides the window; the process keeps running.
 ```bash
 make data    # https://www.unicode.org/Public/emoji/latest/emoji-test.txt
 make && make install
-systemctl --user restart emoji-picker.service
 ```
 
 Pin a version: `UNICODE_VER=15.1 make data`.

@@ -46,6 +46,7 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE"
 
 install -m 755 emoji-picker "$STAGE/emoji-picker"
+install -m 755 install.sh "$STAGE/install.sh"
 install -m 644 pack/emoji-picker.service "$STAGE/emoji-picker.service"
 install -m 644 README.md "$STAGE/README.md"
 install -m 644 LICENSE "$STAGE/LICENSE"
@@ -53,26 +54,20 @@ install -m 644 LICENSE "$STAGE/LICENSE"
 cat > "$STAGE/INSTALL.txt" <<EOF
 emoji-picker ${VERSION} — Linux ${ARCH_LABEL}
 
-Quick install (user-local):
+Quick install (one step):
 
-  mkdir -p ~/.local/bin ~/.config/systemd/user
-  install -m 755 emoji-picker ~/.local/bin/emoji-picker
-  install -m 644 emoji-picker.service ~/.config/systemd/user/emoji-picker.service
+  ./install.sh
 
-  # If the popup never appears under LXQt, add a display drop-in:
-  # ~/.config/systemd/user/emoji-picker.service.d/display.conf
-  #   [Service]
-  #   Environment=DISPLAY=:0
-  #   Environment=XAUTHORITY=%h/.Xauthority
+This automatically installs the binary, configures the systemd user
+service (with display env), and registers the Win+. (Super+Period) shortcut.
 
-  systemctl --user daemon-reload
-  systemctl --user enable --now emoji-picker.service
-  emoji-picker --toggle
+Options:
+  ./install.sh --help
+  ./install.sh --dry-run
+  ./install.sh --uninstall
 
 Runtime deps (Debian/Ubuntu/Lubuntu):
   sudo apt install libgtk-3-0 xdotool fonts-noto-color-emoji xclip
-
-Bind Win+. (Meta+period) — see README.md / docs/SHORTCUTS.md
 EOF
 
 tar -C "$DIST" -czf "$TARBALL" "$STAGE_NAME"
@@ -96,27 +91,67 @@ fi
 
 NOTES="$DIST/release-notes-${VERSION}.md"
 cat > "$NOTES" <<EOF
-## emoji-picker ${TAG}
+# emoji-picker ${TAG} 🎉
 
-Lightweight Unicode emoji popup for Linux **X11** (C + GTK3).
+A tiny **C + GTK3** Unicode emoji popup for Linux **X11** desktops (LXQt, Openbox, GNOME, XFCE, i3, Sway).
+Fast, memory-efficient (~30 MB RSS resident), warm daemon for instant **Win+.** toggle, multi-pick support, and direct paste into the pre-picker window.
 
-### Assets
+---
 
-| File | What |
-|------|------|
-| \`${STAGE_NAME}.tar.gz\` | Prebuilt binary + user systemd unit + INSTALL.txt |
-| \`*.sha256\` | Checksum |
+## ⚡ Quick Install (One-Step)
 
-### Install
+Download and extract the release asset, then run the installer:
 
-See \`INSTALL.txt\` inside the tarball (or README). Needs GTK3, \`xdotool\`, and a color-emoji font.
+\`\`\`bash
+tar -xzf ${STAGE_NAME}.tar.gz
+cd ${STAGE_NAME}
+./install.sh
+\`\`\`
 
-### Notes
+**Done!** Press **Win + .** (\`Super+Period\`) anywhere to open the emoji picker.
 
-- X11 only — insert via xclip + \`windowfocus\` Ctrl+V (Brave-safe; clears clipboard after)
-- Multi-pick stays open; Esc / click-outside / Alt+Tab to hide
-- Modular \`src/{ui,model,insert,platform}\` + \`make test\`
-- Default toggle shortcut: **Win+.** (configure in LXQt **and** Openbox)
+### What \`./install.sh\` does automatically:
+1. **Verifies runtime dependencies** (\`xdotool\`, \`xclip\`, color emoji fonts) and suggests package manager commands if missing.
+2. **Installs binary** to \`~/.local/bin/emoji-picker\`.
+3. **Installs & enables systemd user service** with proper \`DISPLAY\` and \`XAUTHORITY\` drop-in configuration.
+4. **Configures the global shortcut (Win+.)** automatically for your desktop environment:
+   - **LXQt**: registers in \`globalkeyshortcuts.conf\` and reloads \`lxqt-globalkeysd\`.
+   - **Openbox**: registers in \`rc.xml\` and reloads with \`openbox --reconfigure\`.
+   - **GNOME**: registers custom keybinding via \`gsettings\`.
+   - **XFCE**: sets keybinding via \`xfconf-query\`.
+   - **i3 / Sway**: appends bindsym to config and reloads.
+5. **Verifies installation** and starts the daemon immediately.
+
+---
+
+## 🚀 What's New in ${TAG}
+
+- **Unified One-Step Installer (\`install.sh\`)**: Replace multi-step setup with a single automated installer that handles dependencies, compilation, systemd service, and shortcuts.
+- **Auto-Configured Desktop Shortcuts**: Zero manual editing needed for Win+. on Openbox, LXQt, GNOME, XFCE, and i3/Sway.
+- **Built-in Self-Update Mechanism**: Check and update anytime using \`./install.sh --check-update\` or \`./install.sh --update\` (or \`make update\`).
+- **CLI Options**: Added \`--version\` and \`--help\` flags to the binary.
+- **Automated Test Suite**: Added 22 automated installer and update test cases integrated into \`make test\`.
+
+---
+
+## ⌨️ Usage
+
+| Command | Action |
+|---|---|
+| \`emoji-picker --toggle\` | Toggle picker popup (default shortcut target) |
+| \`emoji-picker --show\` | Explicitly show popup |
+| \`emoji-picker --hide\` | Explicitly hide popup |
+| \`emoji-picker --version\` | Display version information |
+| \`emoji-picker --help\` | Display command-line options |
+
+---
+
+## 📦 Assets & Checksums
+
+| File | Description |
+|---|---|
+| \`${STAGE_NAME}.tar.gz\` | Prebuilt binary + installer + systemd unit + README |
+| \`${STAGE_NAME}.sha256\` | SHA-256 Checksum |
 EOF
 
 # Create tag locally if missing, push tag, then release

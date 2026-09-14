@@ -1,6 +1,7 @@
+VERSION ?= 0.3.0
 CC ?= gcc
 CFLAGS ?= -O2 -pipe -Wall -Wextra
-CPPFLAGS ?= -Isrc -Isrc/generated
+CPPFLAGS ?= -Isrc -Isrc/generated -DAPP_VERSION=\"$(VERSION)\"
 GTK := $(shell pkg-config --cflags --libs gtk+-3.0)
 GLIB := $(shell pkg-config --cflags --libs glib-2.0)
 X11 := $(shell pkg-config --cflags --libs x11)
@@ -19,7 +20,7 @@ APP_SRC := \
 	src/platform/x11_util.c \
 	src/generated/emoji_data.c
 
-.PHONY: all clean install uninstall data dist test
+.PHONY: all clean install uninstall data dist test update
 
 all: emoji-picker
 
@@ -50,6 +51,7 @@ test: test_search_query test_history test_emoji_model
 	./test_search_query
 	./test_history
 	./test_emoji_model
+	chmod +x tests/test_install.sh && ./tests/test_install.sh
 
 dist:
 	@test -n "$(VERSION)" || (echo "Usage: make dist VERSION=0.1.0" >&2; exit 2)
@@ -57,16 +59,16 @@ dist:
 	./scripts/release.sh $(VERSION)
 
 install: emoji-picker
-	install -d $(BINDIR)
-	install -m 755 emoji-picker $(BINDIR)/emoji-picker
-	install -d $(HOME)/.config/systemd/user
-	install -m 644 pack/emoji-picker.service $(HOME)/.config/systemd/user/emoji-picker.service
-	@echo "Run: systemctl --user daemon-reload && systemctl --user enable --now emoji-picker.service"
+	chmod +x install.sh
+	./install.sh --prefix=$(PREFIX)
 
 uninstall:
-	rm -f $(BINDIR)/emoji-picker
-	systemctl --user disable --now emoji-picker.service 2>/dev/null || true
-	rm -f $(HOME)/.config/systemd/user/emoji-picker.service
+	chmod +x install.sh
+	./install.sh --uninstall --prefix=$(PREFIX)
+
+update:
+	chmod +x install.sh
+	./install.sh --update --prefix=$(PREFIX)
 
 clean:
 	rm -f emoji-picker test_search_query test_history test_emoji_model

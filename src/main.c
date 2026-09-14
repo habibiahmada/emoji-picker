@@ -93,7 +93,27 @@ static gboolean on_delete(GtkWidget *w, GdkEvent *e, gpointer data) {
     return TRUE;
 }
 
+#ifndef APP_VERSION
+#define APP_VERSION "0.3.0"
+#endif
+
 int main(int argc, char **argv) {
+    if (argc >= 2 && (strcmp(argv[1], "--version") == 0 || strcmp(argv[1], "-v") == 0)) {
+        g_print("emoji-picker %s\n", APP_VERSION);
+        return 0;
+    }
+    if (argc >= 2 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)) {
+        g_print("Usage: emoji-picker [OPTIONS]\n\n"
+                "Lightweight Unicode emoji picker for Linux X11 desktops.\n\n"
+                "Options:\n"
+                "  --toggle       Show or hide the picker window (shortcut target)\n"
+                "  --show         Explicitly show the picker window\n"
+                "  --hide         Explicitly hide the picker window\n"
+                "  --daemon       Run resident in background without opening window\n"
+                "  -v, --version  Print version information\n"
+                "  -h, --help     Show this help message\n");
+        return 0;
+    }
     if (argc >= 2 && strcmp(argv[1], "--show") == 0)
         return send_cmd("show");
     if (argc >= 2 && strcmp(argv[1], "--toggle") == 0)

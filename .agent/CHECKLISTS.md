@@ -14,10 +14,11 @@
 - [ ] Rebuild + restart user service
 - [ ] Spot-check search for a new emoji name
 
-## Shortcuts
+## Shortcuts & Installation
 
 - [ ] Update `docs/SHORTCUTS.md`
-- [ ] Touch Openbox `rc.xml` **and** LXQt `globalkeyshortcuts.conf` (or tell user to use GUI)
+- [ ] Run `tests/test_install.sh` to verify installer across DE conditions
+- [ ] Touch Openbox `rc.xml` **and** LXQt `globalkeyshortcuts.conf` (or run `./install.sh`)
 - [ ] `openbox --reconfigure` and restart `lxqt-globalkeysd`
 
 ## Agent docs

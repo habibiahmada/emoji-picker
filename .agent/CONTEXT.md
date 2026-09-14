@@ -41,9 +41,9 @@ toggles instantly, multi-pick without closing, paste into the **pre-picker** win
 
 ```bash
 cd /home/habibiahmada/Projects/emoji-picker   # adjust if relocated
-make data && make && make test && make install
-systemctl --user daemon-reload
-systemctl --user restart emoji-picker.service
+./install.sh                                  # one-step install & shortcut setup
+# Or via make:
+make test && make install
 # smoke:
 emoji-picker --toggle
 ```
