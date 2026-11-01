@@ -1,5 +1,6 @@
 #include "ui/popup.h"
 
+#include <glib-unix.h>
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,18 +20,7 @@ static char *sock_path(void) {
     return g_strdup_printf("%s/%s", runtime, SOCK_NAME);
 }
 
-static gboolean on_sock_readable(GIOChannel *ch, GIOCondition cond, gpointer data) {
-    (void)cond;
-    (void)data;
-    char buf[64];
-    gsize n = 0;
-    GError *err = NULL;
-    if (g_io_channel_read_chars(ch, buf, sizeof(buf) - 1, &n, &err) != G_IO_STATUS_NORMAL) {
-        if (err)
-            g_error_free(err);
-        return TRUE;
-    }
-    buf[n] = 0;
+static void handle_cmd(const char *buf) {
     if (g_str_has_prefix(buf, "show") || g_str_has_prefix(buf, "toggle")) {
         if (gtk_widget_get_visible(emoji_picker_window(g_picker)))
             gtk_widget_hide(emoji_picker_window(g_picker));
@@ -39,7 +29,21 @@ static gboolean on_sock_readable(GIOChannel *ch, GIOCondition cond, gpointer dat
     } else if (g_str_has_prefix(buf, "hide")) {
         gtk_widget_hide(emoji_picker_window(g_picker));
     }
-    return TRUE;
+}
+
+/* recv() per datagram: a buffered GIOChannel merged back-to-back toggles. */
+static gboolean on_sock_readable(gint fd, GIOCondition cond, gpointer data) {
+    (void)cond;
+    (void)data;
+    char buf[64];
+    for (;;) {
+        ssize_t n = recv(fd, buf, sizeof(buf) - 1, 0);
+        if (n < 0)
+            break;
+        buf[n] = 0;
+        handle_cmd(buf);
+    }
+    return G_SOURCE_CONTINUE;
 }
 
 static int setup_socket(void) {
@@ -60,9 +64,7 @@ static int setup_socket(void) {
         return -1;
     }
     g_free(path);
-    GIOChannel *ch = g_io_channel_unix_new(fd);
-    g_io_channel_set_encoding(ch, NULL, NULL);
-    g_io_add_watch(ch, G_IO_IN, on_sock_readable, NULL);
+    g_unix_fd_add(fd, G_IO_IN, on_sock_readable, NULL);
     g_sock = fd;
     return 0;
 }

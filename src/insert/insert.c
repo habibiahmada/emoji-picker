@@ -7,8 +7,13 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 
+/* Clear only after Ctrl+V was actually sent, so Brave has read CLIPBOARD. */
+#define CLEAR_AFTER_PASTE_MS 450
+
 static uint32_t g_target_xid;
-static guint g_insert_serial;
+static GQueue g_pending = G_QUEUE_INIT;
+static gboolean g_paste_busy;
+static guint g_clear_timeout;
 
 void emoji_insert_set_target(uint32_t xid) {
     g_target_xid = xid;
@@ -18,20 +23,6 @@ static void reap_child(GPid pid, gint status, gpointer user_data) {
     (void)status;
     (void)user_data;
     g_spawn_close_pid(pid);
-}
-
-static int spawn_reaped(char **argv) {
-    GPid pid = 0;
-    GError *err = NULL;
-    if (!g_spawn_async(NULL, argv, NULL,
-                       G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD |
-                           G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL,
-                       NULL, NULL, &pid, &err)) {
-        g_clear_error(&err);
-        return -1;
-    }
-    g_child_watch_add(pid, reap_child, NULL);
-    return 0;
 }
 
 static int clipboard_via_xclip(const char *glyph) {
@@ -120,46 +111,99 @@ void emoji_clipboard_clear(void) {
     gtk_clipboard_clear(cb);
 }
 
+static gboolean have_xclip(void) {
+    static int cached = -1;
+    if (cached < 0) {
+        char *path = g_find_program_in_path("xclip");
+        cached = path != NULL;
+        g_free(path);
+    }
+    return cached;
+}
+
 static gboolean clear_after_paste_cb(gpointer data) {
-    guint serial = GPOINTER_TO_UINT(data);
-    /* Skip if a newer insert already replaced the clipboard. */
-    if (serial == g_insert_serial)
-        emoji_clipboard_clear();
+    (void)data;
+    g_clear_timeout = 0;
+    emoji_clipboard_clear();
     return G_SOURCE_REMOVE;
+}
+
+static void paste_next(void);
+
+static void paste_done(GPid pid, gint status, gpointer user_data) {
+    (void)status;
+    (void)user_data;
+    g_spawn_close_pid(pid);
+    g_paste_busy = FALSE;
+    if (!g_queue_is_empty(&g_pending)) {
+        paste_next();
+        return;
+    }
+    g_clear_timeout = g_timeout_add(CLEAR_AFTER_PASTE_MS, clear_after_paste_cb, NULL);
 }
 
 /*
  * Chromium needs clipboard Ctrl+V. Caller must ungrab first.
  *
+ * Copy, focus and Ctrl+V run in order inside one shell: xclip -i only returns
+ * after it owns CLIPBOARD, so Ctrl+V never races a still-starting xclip. Runs
+ * async — the GTK loop is never blocked waiting on xclip/xdotool.
+ *
  * Use windowfocus (no raise) — not windowactivate. Activate + toggling
  * keep_above made the picker appear to blink (Brave jumps in front, then
  * picker jumps back). Picker stays keep_above; focus moves for Ctrl+V only.
  */
-static void paste_to_target(void) {
-    if (!g_target_xid)
+static void paste_next(void) {
+    char *glyph = g_queue_pop_head(&g_pending);
+    if (!glyph)
         return;
+
+    gboolean xclip = have_xclip();
+    if (!xclip && clipboard_via_gtk(glyph) != 0) {
+        g_free(glyph);
+        paste_next();
+        return;
+    }
 
     char id[32];
     g_snprintf(id, sizeof(id), "%u", (unsigned)g_target_xid);
-
     char *argv[] = {
         "sh", "-c",
+        "if [ -n \"$3\" ]; then "
+        "printf %s \"$2\" | xclip -selection clipboard -t UTF8_STRING -i || exit 1; "
+        "fi; "
+        "[ \"$1\" = 0 ] && exit 0; "
         "sleep 0.05; "
         "xdotool windowfocus \"$1\"; "
         "sleep 0.10; "
         "xdotool key --clearmodifiers ctrl+v",
-        "sh", id, NULL};
+        "sh", id, glyph, xclip ? "1" : "", NULL};
 
-    spawn_reaped(argv);
+    GPid pid = 0;
+    GError *err = NULL;
+    if (!g_spawn_async(NULL, argv, NULL,
+                       G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD |
+                           G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL,
+                       NULL, NULL, &pid, &err)) {
+        g_clear_error(&err);
+        g_free(glyph);
+        paste_next();
+        return;
+    }
+    g_free(glyph);
+    g_paste_busy = TRUE;
+    g_child_watch_add(pid, paste_done, NULL);
 }
 
 void emoji_insert(const char *glyph) {
     if (!glyph || !glyph[0])
         return;
-    g_insert_serial++;
-    if (emoji_copy(glyph) != 0)
-        return;
-    paste_to_target();
-    /* After Brave reads CLIPBOARD, drop contents so it is not left in history. */
-    g_timeout_add(450, clear_after_paste_cb, GUINT_TO_POINTER(g_insert_serial));
+    /* A newer pick owns CLIPBOARD now; do not wipe it before its paste. */
+    if (g_clear_timeout) {
+        g_source_remove(g_clear_timeout);
+        g_clear_timeout = 0;
+    }
+    g_queue_push_tail(&g_pending, g_strdup(glyph));
+    if (!g_paste_busy)
+        paste_next();
 }

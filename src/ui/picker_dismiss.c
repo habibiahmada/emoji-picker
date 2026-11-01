@@ -75,13 +75,20 @@ static gboolean dismiss_poll_cb(gpointer user_data) {
         }
     }
 
-    uint32_t focus = x11_capture_active_xid();
-    uint32_t focus_top = x11_toplevel_xid(dpy, focus);
-    uint32_t self_top = x11_toplevel_xid(dpy, self);
-    uint32_t sticky_top = x11_toplevel_xid(dpy, p->sticky_target);
+    if (p->self_top == 0)
+        p->self_top = x11_toplevel_xid(dpy, self);
+    if (p->sticky_top == 0 && p->sticky_target != 0)
+        p->sticky_top = x11_toplevel_xid(dpy, p->sticky_target);
 
-    if (focus_top != 0 && self_top != 0 && focus_top != self_top &&
-        (sticky_top == 0 || focus_top != sticky_top)) {
+    uint32_t focus = x11_capture_active_xid();
+    if (focus != p->last_focus) {
+        p->last_focus = focus;
+        p->last_focus_top = x11_toplevel_xid(dpy, focus);
+    }
+    uint32_t focus_top = p->last_focus_top;
+
+    if (focus_top != 0 && p->self_top != 0 && focus_top != p->self_top &&
+        (p->sticky_top == 0 || focus_top != p->sticky_top)) {
         picker_hide(p);
         return G_SOURCE_REMOVE;
     }
@@ -92,6 +99,10 @@ static gboolean dismiss_poll_cb(gpointer user_data) {
 void picker_dismiss_poll_start(EmojiPicker *p) {
     p->keymap_ready = FALSE;
     p->outside_btn_latched = FALSE;
+    p->self_top = 0;
+    p->sticky_top = 0;
+    p->last_focus = 0;
+    p->last_focus_top = 0;
     if (p->dismiss_poll)
         return;
     p->dismiss_poll = g_timeout_add(DISMISS_POLL_MS, dismiss_poll_cb, p);

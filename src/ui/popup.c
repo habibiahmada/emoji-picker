@@ -163,8 +163,8 @@ static gboolean deferred_insert_cb(gpointer user_data) {
     remember_position(p);
     gtk_window_set_accept_focus(GTK_WINDOW(p->win), FALSE);
 
-    while (gtk_events_pending())
-        gtk_main_iteration_do(FALSE);
+    /* One round trip so the ungrab lands before xdotool runs. No nested
+     * main loop here: it re-entered fill/poll sources and spun on motion. */
     GdkDisplay *gd = gdk_display_get_default();
     if (gd)
         gdk_display_sync(gd);
