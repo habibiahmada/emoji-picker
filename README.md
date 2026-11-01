@@ -141,7 +141,7 @@ make install                  # Runs ./install.sh
 See [docs/SHORTCUTS.md](docs/SHORTCUTS.md) for manual shortcut configuration details.
 </details>
 
-Maintainer note: ship a release with `./scripts/release.sh 0.3.0 --publish` (or push a `v*` tag).
+Maintainer note: ship a release with `./scripts/release.sh 0.4.0 --publish` (or push a `v*` tag).
 
 ## Updating
 

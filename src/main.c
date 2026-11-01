@@ -96,7 +96,7 @@ static gboolean on_delete(GtkWidget *w, GdkEvent *e, gpointer data) {
 }
 
 #ifndef APP_VERSION
-#define APP_VERSION "0.3.0"
+#define APP_VERSION "0.4.0"
 #endif
 
 int main(int argc, char **argv) {
