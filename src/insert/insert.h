@@ -12,7 +12,8 @@ void emoji_clipboard_clear(void);
 
 /*
  * xclip + Ctrl+V into pre-picker window. Caller must ungrab first.
- * Clears CLIPBOARD ~450ms after paste. Picker can stay visible.
+ * Async and serialized: rapid picks queue up. Clears CLIPBOARD ~450ms after
+ * the last queued Ctrl+V was sent. Picker can stay visible.
  */
 void emoji_insert(const char *glyph);
 

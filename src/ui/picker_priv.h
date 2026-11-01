@@ -52,6 +52,11 @@ struct EmojiPicker {
     guint dismiss_poll;
     gint64 last_insert_us;
     uint32_t sticky_target;
+    /* Dismiss-poll caches: toplevels resolved once per show / focus change. */
+    uint32_t self_top;
+    uint32_t sticky_top;
+    uint32_t last_focus;
+    uint32_t last_focus_top;
     char prev_keymap[32];
     gboolean keymap_ready;
     gboolean outside_btn_latched;
