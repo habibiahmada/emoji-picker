@@ -7,7 +7,10 @@
 #include "ui/picker_grid.h"
 #include "ui/picker_priv.h"
 #include "model/search_query.h"
+#include "model/skin_tone.h"
+#include "platform/font_support.h"
 #include "platform/x11_util.h"
+#include "ui/picker_tone.h"
 
 #include <string.h>
 
@@ -190,6 +193,16 @@ void picker_action_emoji_clicked(GtkButton *btn, gpointer user_data) {
     if (!glyph)
         return;
 
+    /* First toned emoji ever: ask once; afterwards the saved tone applies. */
+    int base = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(btn), "tone-base")) - 1;
+    if (base >= 0 && skin_tone_get() == SKIN_TONE_UNSET) {
+        picker_tone_popover_show(p, GTK_WIDGET(btn), base);
+        return;
+    }
+    picker_insert_glyph(p, glyph);
+}
+
+void picker_insert_glyph(EmojiPicker *p, const char *glyph) {
     remember_position(p);
     emoji_history_push(glyph);
 
@@ -260,6 +273,8 @@ static GtkWidget *make_tab_label(int i) {
 
 EmojiPicker *emoji_picker_new(void) {
     emoji_history_load();
+    skin_tone_load();
+    emoji_model_set_max_version(font_emoji_max_version());
 
     EmojiPicker *p = g_new0(EmojiPicker, 1);
     p->win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -362,6 +377,7 @@ void emoji_picker_show(EmojiPicker *p) {
     }
     if (p->status)
         gtk_label_set_text(GTK_LABEL(p->status), "");
+    picker_tone_popover_close(p);
 
     gtk_widget_show_all(p->win);
     picker_grid_resync_visibility(p);

@@ -1,6 +1,7 @@
 #include "ui/picker_dismiss.h"
 
 #include "platform/x11_util.h"
+#include "ui/picker_tone.h"
 
 #include <gdk/gdkx.h>
 #include <X11/keysym.h>
@@ -19,6 +20,7 @@ void picker_hide(EmojiPicker *p) {
         p->focus_out_timeout = 0;
     }
     p->suppress_hide = FALSE;
+    picker_tone_popover_close(p);
     gtk_window_set_accept_focus(GTK_WINDOW(p->win), TRUE);
     gtk_widget_hide(p->win);
 }

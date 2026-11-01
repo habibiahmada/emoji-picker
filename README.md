@@ -24,6 +24,8 @@ focused before** the picker opened — so you can keep multi-picking without fig
 - Full Unicode set from official `emoji-test.txt` (refresh anytime)
 - Search by English name (`smile`, `fire`, `cat`, …)
 - Category tabs + recent history
+- Skin tones: pick once, applied to every toned emoji (right-click to change);
+  two-person emoji also offer mixed tones
 - Popup near the pointer; skip taskbar; Esc / click-outside to dismiss
 - Stays open for multi-pick (closes on Esc / outside / typing / Alt+Tab)
 - Inserts via clipboard into the pre-picker window; clears clipboard after paste
@@ -38,8 +40,8 @@ Built for low-RAM X11 desktops — not another Electron/Flatpak resident.
 
 | Metric                                | Value                    |
 | ------------------------------------- | ------------------------ |
-| Binary on disk                        | **~225 KB**              |
-| Emoji table (generated)               | **~80 KB** · 1914 glyphs |
+| Binary on disk                        | **~380 KB**              |
+| Emoji table (generated)               | 1914 glyphs + 2030 skin-tone variants |
 | Daemon RSS (idle)                     | **~30 MB**               |
 | Daemon RSS (popup open)               | **~45 MB**               |
 | PSS idle / open (fairer share of GTK) | **~12 / ~18 MB**         |
@@ -228,7 +230,8 @@ make uninstall
 - **X11 only** (GTK + xclip on X). Wayland needs a different path.
 - Chromium needs clipboard paste (Unicode typing is ignored); insert uses
   `windowfocus` + Ctrl+V after releasing the GTK click grab.
-- Skin-tone variants are omitted from the grid (base glyphs) to keep RAM/UI light.
+- Emoji newer than the installed color emoji font (e.g. Unicode 17 on Noto 2.047)
+  are hidden instead of drawn as empty boxes; update the font to see them.
 
 
 

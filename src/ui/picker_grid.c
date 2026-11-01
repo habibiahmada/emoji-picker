@@ -1,6 +1,7 @@
 #include "ui/picker_grid.h"
 
 #include "model/emoji_model.h"
+#include "ui/picker_tone.h"
 
 static GtkCssProvider *g_btn_css;
 static GtkCssProvider *g_tab_css;
@@ -23,6 +24,24 @@ void picker_css_ensure(void) {
             "button.emoji-cell:hover {"
             "  background: alpha(@theme_selected_bg_color, 0.35);"
             "}"
+            "button.emoji-cell.emoji-tone-current {"
+            "  background: alpha(@theme_selected_bg_color, 0.55);"
+            "}"
+            "button.tone-swatch {"
+            "  min-width: 18px;"
+            "  min-height: 18px;"
+            "  padding: 0;"
+            "  border-radius: 50%;"
+            "  border: 1px solid alpha(@theme_fg_color, 0.25);"
+            "}"
+            "button.tone-swatch.active {"
+            "  box-shadow: 0 0 0 2px @theme_selected_bg_color;"
+            "}"
+            "button.tone-1 { background: #f7d7c4; }"
+            "button.tone-2 { background: #d8b094; }"
+            "button.tone-3 { background: #bb9167; }"
+            "button.tone-4 { background: #8e562e; }"
+            "button.tone-5 { background: #613d30; }"
             "flowbox {"
             "  min-height: 0;"
             "}"
@@ -147,6 +166,18 @@ void picker_grid_resync_visibility(EmojiPicker *p) {
     }
 }
 
+/* Right-click a toned cell: change skin tone even after one was saved. */
+static gboolean on_cell_button_press(GtkWidget *btn, GdkEventButton *ev,
+                                     gpointer user_data) {
+    if (ev->type != GDK_BUTTON_PRESS || ev->button != GDK_BUTTON_SECONDARY)
+        return FALSE;
+    int base = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(btn), "tone-base")) - 1;
+    if (base < 0)
+        return FALSE;
+    picker_tone_popover_show(user_data, btn, base);
+    return TRUE;
+}
+
 static GtkWidget *make_pool_button(EmojiPicker *p) {
     picker_css_ensure();
     GtkWidget *btn = gtk_button_new_with_label("");
@@ -158,6 +189,7 @@ static GtkWidget *make_pool_button(EmojiPicker *p) {
                                    GTK_STYLE_PROVIDER(g_btn_css),
                                    GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
     g_signal_connect(btn, "clicked", G_CALLBACK(picker_action_emoji_clicked), p);
+    g_signal_connect(btn, "button-press-event", G_CALLBACK(on_cell_button_press), p);
     g_signal_connect(btn, "realize", G_CALLBACK(on_widget_realize_hand), NULL);
     gtk_widget_set_no_show_all(btn, TRUE);
     gtk_widget_hide(btn);
@@ -213,6 +245,8 @@ static gboolean fill_idle_cb(gpointer user_data) {
         const char *name = emoji_model_hit_name(p, i);
         gtk_button_set_label(GTK_BUTTON(btn), glyph);
         g_object_set_data(G_OBJECT(btn), "glyph", (gpointer)glyph);
+        g_object_set_data(G_OBJECT(btn), "tone-base",
+                          GINT_TO_POINTER(emoji_model_hit_tone_base(p, i) + 1));
         gtk_widget_set_tooltip_text(btn, name ? name : glyph);
         emoji_btn_show(btn);
     }
@@ -225,6 +259,16 @@ static gboolean fill_idle_cb(gpointer user_data) {
     p->fill_idle = 0;
     p->loading_more = FALSE;
     return G_SOURCE_REMOVE;
+}
+
+void picker_grid_refresh_labels(EmojiPicker *p) {
+    for (int i = 0; i < p->shown; i++) {
+        if (emoji_model_hit_tone_base(p, i) < 0)
+            continue;
+        const char *glyph = emoji_model_hit_glyph(p, i);
+        gtk_button_set_label(GTK_BUTTON(p->pool[i]), glyph);
+        g_object_set_data(G_OBJECT(p->pool[i]), "glyph", (gpointer)glyph);
+    }
 }
 
 static void start_fill(EmojiPicker *p) {
