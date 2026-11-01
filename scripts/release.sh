@@ -126,11 +126,20 @@ cd ${STAGE_NAME}
 
 ## 🚀 What's New in ${TAG}
 
-- **Unified One-Step Installer (\`install.sh\`)**: Replace multi-step setup with a single automated installer that handles dependencies, compilation, systemd service, and shortcuts.
-- **Auto-Configured Desktop Shortcuts**: Zero manual editing needed for Win+. on Openbox, LXQt, GNOME, XFCE, and i3/Sway.
-- **Built-in Self-Update Mechanism**: Check and update anytime using \`./install.sh --check-update\` or \`./install.sh --update\` (or \`make update\`).
-- **CLI Options**: Added \`--version\` and \`--help\` flags to the binary.
-- **Automated Test Suite**: Added 22 automated installer and update test cases integrated into \`make test\`.
+### 🎨 Skin tones
+- **2,030 skin-tone variants** (Unicode 17) for 330 emoji, without filling the grid with duplicates.
+- First click on a toned emoji opens a tone picker; your choice is saved and applied to **every** toned emoji. Right-click any toned emoji to change it.
+- Two-person emoji (🤝 💏 👫 …) also offer mixed per-person tones.
+- Emoji newer than your installed color emoji font are hidden instead of drawn as empty boxes.
+
+### ⚡ No more freezes
+- The picker no longer runs \`xdotool\` 20×/s while open; it reads the active window over its own X connection. This was the main cause of the popup not appearing and slow inserts under load.
+- Copy → focus → Ctrl+V now run strictly in order, rapid picks are queued, and the clipboard is cleared only after the paste was sent.
+- Virtual emoji grid: scrolling "All" costs the same as a small category (worst stall 64 ms → ~6 ms), daemon RSS with the grid open ~60 MB → ~44 MB.
+- First Win+. after login is faster (icon theme loaded at daemon start); quick double Win+. presses are no longer merged.
+
+### 🧪 Quality
+- Unit tests for skin tones and the virtual grid; CI now runs \`make test\` on every push and before each release.
 
 ---
 

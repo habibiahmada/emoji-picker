@@ -647,7 +647,7 @@ get_installed_version() {
     ver=$(run_with_timeout 2s ./emoji-picker --version 2>/dev/null | awk '{print $2}' || true)
   fi
   if [[ -z "$ver" ]]; then
-    ver="0.3.0"
+    ver="0.4.0"
   fi
   echo "${ver#v}"
 }
