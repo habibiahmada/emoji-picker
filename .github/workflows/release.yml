@@ -17,7 +17,10 @@ jobs:
       - name: Install build deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config libgtk-3-dev libx11-dev
+          sudo apt-get install -y build-essential pkg-config libgtk-3-dev libx11-dev libfontconfig-dev
+
+      - name: Unit tests
+        run: make test
 
       - name: Build release tarball
         run: |

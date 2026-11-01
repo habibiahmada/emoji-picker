@@ -1,6 +1,7 @@
 #include "ui/picker_grid.h"
 
 #include "model/emoji_model.h"
+#include "ui/grid_layout.h"
 #include "ui/picker_tone.h"
 
 static GtkCssProvider *g_btn_css;
@@ -97,9 +98,6 @@ GtkCssProvider *picker_css_tabs(void) {
  * cost per frame stays the same for 80 or 1900 hits (a FlowBox holding every
  * hit re-laid out all of them on each page load).
  */
-#define GRID_COLS 8
-#define GRID_ROW_GAP 5
-#define GRID_SCROLLBAR_ROOM 14 /* room for the vertical scrollbar */
 
 static void on_widget_realize_hand(GtkWidget *w, gpointer user_data) {
     (void)user_data;
@@ -170,18 +168,17 @@ static GtkAdjustment *grid_vadj(EmojiPicker *p) {
 static void render(EmojiPicker *p, gboolean force) {
     if (p->cell_h <= 0 || p->cell_w <= 0)
         return;
-    int first = (int)(gtk_adjustment_get_value(grid_vadj(p)) / p->cell_h);
+    double scroll_y = gtk_adjustment_get_value(grid_vadj(p));
+    int first = grid_first_row(scroll_y, p->cell_h);
     if (!force && first == p->rendered_first)
         return;
     p->rendered_first = first;
 
-    int bw = p->cell_h - GRID_ROW_GAP;
-    int x_pad = (p->cell_w - bw) / 2;
-    /* Ring buffer: hit i always uses pool[i % pool_cap], so scrolling one row
+    /* Ring buffer: hit i always uses pool[grid_slot(i)], so scrolling one row
      * relabels only that row; the rest just move. */
-    int start = first * GRID_COLS;
+    int start = grid_first_hit(scroll_y, p->cell_h);
     for (int i = start; i < start + p->pool_cap; i++) {
-        GtkWidget *btn = p->pool[i % p->pool_cap];
+        GtkWidget *btn = p->pool[grid_slot(i, p->pool_cap)];
         if (i >= p->n_hits) {
             gtk_widget_hide(btn);
             g_object_set_data(G_OBJECT(btn), "hit", GINT_TO_POINTER(-1));
@@ -189,8 +186,9 @@ static void render(EmojiPicker *p, gboolean force) {
         }
         if (force || GPOINTER_TO_INT(g_object_get_data(G_OBJECT(btn), "hit")) != i)
             set_cell(p, btn, i);
-        gtk_layout_move(GTK_LAYOUT(p->grid), btn, (i % GRID_COLS) * p->cell_w + x_pad,
-                        (i / GRID_COLS) * p->cell_h);
+        int x = 0, y = 0;
+        grid_cell_xy(i, p->cell_w, p->cell_h, &x, &y);
+        gtk_layout_move(GTK_LAYOUT(p->grid), btn, x, y);
         gtk_widget_show(btn);
     }
 }
@@ -198,7 +196,7 @@ static void render(EmojiPicker *p, gboolean force) {
 static void update_extent(EmojiPicker *p) {
     if (p->cell_h <= 0)
         return;
-    int rows = (p->n_hits + GRID_COLS - 1) / GRID_COLS;
+    int rows = grid_rows(p->n_hits);
     /* Width 1: GtkLayout requests its own width, and tracking the allocation
      * here made the scrollbar flip on/off (400 <-> 387px) in a resize loop. */
     gtk_layout_set_size(GTK_LAYOUT(p->grid), 1, (guint)(rows * p->cell_h));
@@ -211,15 +209,11 @@ static gboolean relayout_idle(gpointer user_data) {
     if (first) {
         int h = 0;
         gtk_widget_get_preferred_height(p->pool[0], NULL, &h);
-        p->cell_h = MAX(h, 40) + GRID_ROW_GAP;
+        p->cell_h = grid_cell_height(h);
     }
-    /* Columns from the scrolled window, not the grid: the grid narrows when
-     * the scrollbar shows, and re-placing cells for that toggled the
-     * scrollbar again in a ~60 Hz resize loop. */
-    int cell_w = (gtk_widget_get_allocated_width(p->scroll) - GRID_SCROLLBAR_ROOM) /
-                 GRID_COLS;
-    /* Visible rows plus one partly scrolled-in row. */
-    int need = ((p->alloc_h + p->cell_h - 1) / p->cell_h + 1) * GRID_COLS;
+    /* Scrolled-window width, not the grid's: see grid_cell_width(). */
+    int cell_w = grid_cell_width(gtk_widget_get_allocated_width(p->scroll));
+    int need = grid_pool_size(p->alloc_h, p->cell_h);
     if (!first && cell_w == p->cell_w && need <= p->pool_cap)
         return G_SOURCE_REMOVE;
     p->cell_w = cell_w;

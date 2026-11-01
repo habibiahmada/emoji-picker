@@ -22,6 +22,7 @@ APP_SRC := \
 	src/platform/font_support.c \
 	src/platform/x11_util.c \
 	src/ui/picker_tone.c \
+	src/ui/grid_layout.c \
 	src/generated/emoji_data.c
 
 .PHONY: all clean install uninstall data dist test update
@@ -55,11 +56,16 @@ test_skin_tone: tests/test_skin_tone.c src/model/skin_tone.c src/generated/emoji
 	$(CC) $(CFLAGS) $(CPPFLAGS) -Itests -o $@ \
 		tests/test_skin_tone.c src/model/skin_tone.c src/generated/emoji_data.c $(GLIB)
 
-test: test_search_query test_history test_emoji_model test_skin_tone
+test_grid_layout: tests/test_grid_layout.c src/ui/grid_layout.c src/ui/grid_layout.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -Itests -o $@ \
+		tests/test_grid_layout.c src/ui/grid_layout.c
+
+test: test_search_query test_history test_emoji_model test_skin_tone test_grid_layout
 	./test_search_query
 	./test_history
 	./test_emoji_model
 	./test_skin_tone
+	./test_grid_layout
 	chmod +x tests/test_install.sh && ./tests/test_install.sh
 
 dist:
@@ -80,5 +86,5 @@ update:
 	./install.sh --update --prefix=$(PREFIX)
 
 clean:
-	rm -f emoji-picker test_search_query test_history test_emoji_model test_skin_tone
+	rm -f emoji-picker test_search_query test_history test_emoji_model test_skin_tone test_grid_layout
 	rm -rf dist
