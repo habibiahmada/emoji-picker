@@ -7,7 +7,8 @@
 void picker_action_emoji_clicked(GtkButton *btn, gpointer user_data);
 void picker_insert_glyph(EmojiPicker *p, const char *glyph);
 
-void picker_grid_ensure_pool(EmojiPicker *p, int need);
+/* Scrollable grid widget to put in p->scroll; owns the button pool. */
+GtkWidget *picker_grid_new(EmojiPicker *p);
 void picker_grid_present_reset(EmojiPicker *p);
 void picker_grid_resync_visibility(EmojiPicker *p);
 /* Re-read glyphs of shown cells (after the saved skin tone changes). */

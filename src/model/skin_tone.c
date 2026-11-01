@@ -40,7 +40,9 @@ void skin_tone_set(int tone) {
     char *path = skin_tone_path();
     char buf[8];
     g_snprintf(buf, sizeof(buf), "%d\n", tone);
-    g_file_set_contents(path, buf, -1, NULL);
+    /* No fsync: it stalled the UI ~40ms under swap; losing a 2-byte
+     * preference on power loss only brings the tone popup back. */
+    g_file_set_contents_full(path, buf, -1, G_FILE_SET_CONTENTS_NONE, 0600, NULL);
     g_free(path);
 }
 

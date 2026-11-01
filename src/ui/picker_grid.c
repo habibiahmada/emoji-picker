@@ -42,27 +42,6 @@ void picker_css_ensure(void) {
             "button.tone-3 { background: #bb9167; }"
             "button.tone-4 { background: #8e562e; }"
             "button.tone-5 { background: #613d30; }"
-            "flowbox {"
-            "  min-height: 0;"
-            "}"
-            "flowboxchild {"
-            "  padding: 2px;"
-            "  margin: 0;"
-            "  min-width: 0;"
-            "  min-height: 0;"
-            "  outline: none;"
-            "  border: none;"
-            "  box-shadow: none;"
-            "  background: transparent;"
-            "}"
-            "flowboxchild:focus,"
-            "flowboxchild:selected,"
-            "flowboxchild:hover {"
-            "  outline: none;"
-            "  border: none;"
-            "  box-shadow: none;"
-            "  background: transparent;"
-            "}"
             "entry.emoji-search,"
             "entry.emoji-search text {"
             "  font-family: sans-serif;"
@@ -112,7 +91,18 @@ GtkCssProvider *picker_css_tabs(void) {
     return g_tab_css;
 }
 
-static void set_hand_cursor(GtkWidget *w) {
+/*
+ * Virtual grid: a fixed pool of buttons covering the visible rows lives in a
+ * GtkLayout sized to every row. Scrolling moves and relabels the pool, so the
+ * cost per frame stays the same for 80 or 1900 hits (a FlowBox holding every
+ * hit re-laid out all of them on each page load).
+ */
+#define GRID_COLS 8
+#define GRID_ROW_GAP 5
+#define GRID_SCROLLBAR_ROOM 14 /* room for the vertical scrollbar */
+
+static void on_widget_realize_hand(GtkWidget *w, gpointer user_data) {
+    (void)user_data;
     GdkWindow *win = gtk_widget_get_window(w);
     if (!win)
         return;
@@ -120,50 +110,6 @@ static void set_hand_cursor(GtkWidget *w) {
         gdk_cursor_new_for_display(gdk_window_get_display(win), GDK_HAND2);
     gdk_window_set_cursor(win, cur);
     g_object_unref(cur);
-}
-
-static void clear_cursor(GtkWidget *w) {
-    GdkWindow *win = gtk_widget_get_window(w);
-    if (win)
-        gdk_window_set_cursor(win, NULL);
-}
-
-static void on_widget_realize_hand(GtkWidget *w, gpointer user_data) {
-    (void)user_data;
-    set_hand_cursor(w);
-}
-
-static GtkWidget *flow_wrap(GtkWidget *btn) {
-    GtkWidget *parent = gtk_widget_get_parent(btn);
-    if (parent && GTK_IS_FLOW_BOX_CHILD(parent))
-        return parent;
-    return btn;
-}
-
-static void emoji_btn_show(GtkWidget *btn) {
-    GtkWidget *wrap = flow_wrap(btn);
-    gtk_widget_set_can_focus(btn, FALSE);
-    gtk_widget_set_can_focus(wrap, FALSE);
-    gtk_widget_show(btn);
-    gtk_widget_show(wrap);
-    if (gtk_widget_get_realized(btn))
-        set_hand_cursor(btn);
-}
-
-static void emoji_btn_hide(GtkWidget *btn) {
-    GtkWidget *wrap = flow_wrap(btn);
-    clear_cursor(btn);
-    gtk_widget_hide(btn);
-    gtk_widget_hide(wrap);
-}
-
-void picker_grid_resync_visibility(EmojiPicker *p) {
-    for (int i = 0; i < p->pool_cap; i++) {
-        if (i < p->shown)
-            emoji_btn_show(p->pool[i]);
-        else
-            emoji_btn_hide(p->pool[i]);
-    }
 }
 
 /* Right-click a toned cell: change skin tone even after one was saved. */
@@ -179,7 +125,6 @@ static gboolean on_cell_button_press(GtkWidget *btn, GdkEventButton *ev,
 }
 
 static GtkWidget *make_pool_button(EmojiPicker *p) {
-    picker_css_ensure();
     GtkWidget *btn = gtk_button_new_with_label("");
     gtk_widget_set_size_request(btn, 40, 40);
     gtk_widget_set_can_focus(btn, FALSE);
@@ -192,127 +137,138 @@ static GtkWidget *make_pool_button(EmojiPicker *p) {
     g_signal_connect(btn, "button-press-event", G_CALLBACK(on_cell_button_press), p);
     g_signal_connect(btn, "realize", G_CALLBACK(on_widget_realize_hand), NULL);
     gtk_widget_set_no_show_all(btn, TRUE);
-    gtk_widget_hide(btn);
-    gtk_container_add(GTK_CONTAINER(p->flow), btn);
-
-    GtkWidget *wrap = flow_wrap(btn);
-    if (wrap != btn) {
-        gtk_widget_set_no_show_all(wrap, TRUE);
-        gtk_widget_set_can_focus(wrap, FALSE);
-        gtk_widget_set_hexpand(wrap, FALSE);
-        gtk_widget_set_vexpand(wrap, FALSE);
-        gtk_widget_set_halign(wrap, GTK_ALIGN_CENTER);
-        gtk_widget_set_valign(wrap, GTK_ALIGN_START);
-        gtk_widget_set_size_request(wrap, 44, 44);
-        gtk_style_context_add_provider(gtk_widget_get_style_context(wrap),
-                                       GTK_STYLE_PROVIDER(g_btn_css),
-                                       GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-        gtk_widget_hide(wrap);
-    }
+    gtk_layout_put(GTK_LAYOUT(p->grid), btn, 0, 0);
+    g_object_set_data(G_OBJECT(btn), "hit", GINT_TO_POINTER(-1));
     return btn;
 }
 
-void picker_grid_ensure_pool(EmojiPicker *p, int need) {
+static void ensure_pool(EmojiPicker *p, int need) {
     if (need <= p->pool_cap)
         return;
-    int nc = p->pool_cap ? p->pool_cap : 32;
-    while (nc < need)
-        nc *= 2;
-    p->pool = g_realloc(p->pool, (gsize)nc * sizeof(GtkWidget *));
-    for (int i = p->pool_cap; i < nc; i++)
+    p->pool = g_realloc(p->pool, (gsize)need * sizeof(GtkWidget *));
+    for (int i = p->pool_cap; i < need; i++)
         p->pool[i] = make_pool_button(p);
-    p->pool_cap = nc;
+    p->pool_cap = need;
 }
 
-static void hide_unused_buttons(EmojiPicker *p, int from) {
-    for (int i = from; i < p->shown; i++)
-        emoji_btn_hide(p->pool[i]);
-    if (from < p->shown)
-        p->shown = from;
+static void set_cell(EmojiPicker *p, GtkWidget *btn, int i) {
+    const char *glyph = emoji_model_hit_glyph(p, i);
+    const char *name = emoji_model_hit_name(p, i);
+    gtk_button_set_label(GTK_BUTTON(btn), glyph);
+    g_object_set_data(G_OBJECT(btn), "glyph", (gpointer)glyph);
+    g_object_set_data(G_OBJECT(btn), "tone-base",
+                      GINT_TO_POINTER(emoji_model_hit_tone_base(p, i) + 1));
+    g_object_set_data(G_OBJECT(btn), "hit", GINT_TO_POINTER(i));
+    gtk_widget_set_tooltip_text(btn, name ? name : glyph);
 }
 
-static gboolean fill_idle_cb(gpointer user_data) {
-    EmojiPicker *p = user_data;
-    int end = p->fill_pos + FILL_CHUNK;
-    if (end > p->reveal_to)
-        end = p->reveal_to;
-    picker_grid_ensure_pool(p, end);
+static GtkAdjustment *grid_vadj(EmojiPicker *p) {
+    return gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(p->grid));
+}
 
-    for (; p->fill_pos < end; p->fill_pos++) {
-        int i = p->fill_pos;
-        GtkWidget *btn = p->pool[i];
-        const char *glyph = emoji_model_hit_glyph(p, i);
-        const char *name = emoji_model_hit_name(p, i);
-        gtk_button_set_label(GTK_BUTTON(btn), glyph);
-        g_object_set_data(G_OBJECT(btn), "glyph", (gpointer)glyph);
-        g_object_set_data(G_OBJECT(btn), "tone-base",
-                          GINT_TO_POINTER(emoji_model_hit_tone_base(p, i) + 1));
-        gtk_widget_set_tooltip_text(btn, name ? name : glyph);
-        emoji_btn_show(btn);
+/* force: hits or glyphs changed, so relabel even if the row did not move. */
+static void render(EmojiPicker *p, gboolean force) {
+    if (p->cell_h <= 0 || p->cell_w <= 0)
+        return;
+    int first = (int)(gtk_adjustment_get_value(grid_vadj(p)) / p->cell_h);
+    if (!force && first == p->rendered_first)
+        return;
+    p->rendered_first = first;
+
+    int bw = p->cell_h - GRID_ROW_GAP;
+    int x_pad = (p->cell_w - bw) / 2;
+    /* Ring buffer: hit i always uses pool[i % pool_cap], so scrolling one row
+     * relabels only that row; the rest just move. */
+    int start = first * GRID_COLS;
+    for (int i = start; i < start + p->pool_cap; i++) {
+        GtkWidget *btn = p->pool[i % p->pool_cap];
+        if (i >= p->n_hits) {
+            gtk_widget_hide(btn);
+            g_object_set_data(G_OBJECT(btn), "hit", GINT_TO_POINTER(-1));
+            continue;
+        }
+        if (force || GPOINTER_TO_INT(g_object_get_data(G_OBJECT(btn), "hit")) != i)
+            set_cell(p, btn, i);
+        gtk_layout_move(GTK_LAYOUT(p->grid), btn, (i % GRID_COLS) * p->cell_w + x_pad,
+                        (i / GRID_COLS) * p->cell_h);
+        gtk_widget_show(btn);
     }
-    if (p->fill_pos > p->shown)
-        p->shown = p->fill_pos;
+}
 
-    if (p->fill_pos < p->reveal_to)
-        return G_SOURCE_CONTINUE;
+static void update_extent(EmojiPicker *p) {
+    if (p->cell_h <= 0)
+        return;
+    int rows = (p->n_hits + GRID_COLS - 1) / GRID_COLS;
+    /* Width 1: GtkLayout requests its own width, and tracking the allocation
+     * here made the scrollbar flip on/off (400 <-> 387px) in a resize loop. */
+    gtk_layout_set_size(GTK_LAYOUT(p->grid), 1, (guint)(rows * p->cell_h));
+}
 
-    p->fill_idle = 0;
-    p->loading_more = FALSE;
+static gboolean relayout_idle(gpointer user_data) {
+    EmojiPicker *p = user_data;
+    p->relayout_idle = 0;
+    gboolean first = p->cell_h <= 0;
+    if (first) {
+        int h = 0;
+        gtk_widget_get_preferred_height(p->pool[0], NULL, &h);
+        p->cell_h = MAX(h, 40) + GRID_ROW_GAP;
+    }
+    /* Columns from the scrolled window, not the grid: the grid narrows when
+     * the scrollbar shows, and re-placing cells for that toggled the
+     * scrollbar again in a ~60 Hz resize loop. */
+    int cell_w = (gtk_widget_get_allocated_width(p->scroll) - GRID_SCROLLBAR_ROOM) /
+                 GRID_COLS;
+    /* Visible rows plus one partly scrolled-in row. */
+    int need = ((p->alloc_h + p->cell_h - 1) / p->cell_h + 1) * GRID_COLS;
+    if (!first && cell_w == p->cell_w && need <= p->pool_cap)
+        return G_SOURCE_REMOVE;
+    p->cell_w = cell_w;
+    ensure_pool(p, need);
+    update_extent(p);
+    render(p, TRUE);
     return G_SOURCE_REMOVE;
 }
 
-void picker_grid_refresh_labels(EmojiPicker *p) {
-    for (int i = 0; i < p->shown; i++) {
-        if (emoji_model_hit_tone_base(p, i) < 0)
-            continue;
-        const char *glyph = emoji_model_hit_glyph(p, i);
-        gtk_button_set_label(GTK_BUTTON(p->pool[i]), glyph);
-        g_object_set_data(G_OBJECT(p->pool[i]), "glyph", (gpointer)glyph);
-    }
+/* Only note the new size here: showing/moving children from inside the
+ * layout's own allocation left them unallocated and undrawn. */
+static void on_grid_size_allocate(GtkWidget *w, GdkRectangle *a, gpointer user_data) {
+    (void)w;
+    EmojiPicker *p = user_data;
+    if (a->width == p->alloc_w && a->height == p->alloc_h)
+        return;
+    p->alloc_w = a->width;
+    p->alloc_h = a->height;
+    if (!p->relayout_idle)
+        p->relayout_idle = g_idle_add(relayout_idle, p);
 }
 
-static void start_fill(EmojiPicker *p) {
-    if (p->fill_idle) {
-        g_source_remove(p->fill_idle);
-        p->fill_idle = 0;
-    }
-    fill_idle_cb(p);
-    if (p->fill_pos < p->reveal_to)
-        p->fill_idle = g_idle_add(fill_idle_cb, p);
+GtkWidget *picker_grid_new(EmojiPicker *p) {
+    picker_css_ensure();
+    p->grid = gtk_layout_new(NULL, NULL);
+    gtk_widget_set_can_focus(p->grid, FALSE);
+    gtk_widget_set_hexpand(p->grid, TRUE);
+    p->rendered_first = -1;
+    /* First page before the first allocation; size-allocate tops it up. */
+    ensure_pool(p, 7 * GRID_COLS);
+    g_signal_connect(p->grid, "size-allocate", G_CALLBACK(on_grid_size_allocate), p);
+    return p->grid;
+}
+
+void picker_grid_resync_visibility(EmojiPicker *p) {
+    render(p, TRUE);
+}
+
+void picker_grid_refresh_labels(EmojiPicker *p) {
+    render(p, TRUE);
 }
 
 void picker_grid_present_reset(EmojiPicker *p) {
-    hide_unused_buttons(p, 0);
-    p->reveal_to = p->n_hits < PAGE_SIZE ? p->n_hits : PAGE_SIZE;
-    p->fill_pos = 0;
-    p->loading_more = FALSE;
-    if (p->scroll) {
-        GtkAdjustment *adj =
-            gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(p->scroll));
-        gtk_adjustment_set_value(adj, 0);
-    }
-    start_fill(p);
-}
-
-static void load_more(EmojiPicker *p) {
-    if (p->loading_more || p->reveal_to >= p->n_hits)
-        return;
-    p->loading_more = TRUE;
-    int next = p->reveal_to + PAGE_SIZE;
-    if (next > p->n_hits)
-        next = p->n_hits;
-    p->fill_pos = p->reveal_to;
-    p->reveal_to = next;
-    start_fill(p);
+    gtk_adjustment_set_value(grid_vadj(p), 0);
+    update_extent(p);
+    render(p, TRUE);
 }
 
 void picker_grid_on_vadj_changed(GtkAdjustment *adj, gpointer user_data) {
-    EmojiPicker *p = user_data;
-    double value = gtk_adjustment_get_value(adj);
-    double page = gtk_adjustment_get_page_size(adj);
-    double upper = gtk_adjustment_get_upper(adj);
-    if (upper <= page)
-        return;
-    if (value + page >= upper - 64.0)
-        load_more(p);
+    (void)adj;
+    render(user_data, FALSE);
 }
