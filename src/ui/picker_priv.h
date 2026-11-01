@@ -9,8 +9,6 @@
 
 #include "generated/emoji_data.h"
 
-#define PAGE_SIZE 80
-#define FILL_CHUNK 40
 #define SEARCH_DEBOUNCE_MS 60
 #define DISMISS_POLL_MS 50
 
@@ -24,12 +22,16 @@ struct EmojiPicker {
     GtkWidget *search;
     GtkWidget *notebook;
     GtkWidget *scroll;
-    GtkWidget *flow;
+    GtkWidget *grid;
 
     GtkWidget **pool;
     int pool_cap;
-    int shown;
-    int reveal_to;
+    int cell_w;
+    int cell_h;
+    int rendered_first;
+    int alloc_w;
+    int alloc_h;
+    guint relayout_idle;
 
     uint16_t *hits;
     int n_hits;
@@ -37,9 +39,6 @@ struct EmojiPicker {
     char **hit_glyphs;
 
     guint search_timeout;
-    guint fill_idle;
-    int fill_pos;
-    gboolean loading_more;
 
     GHashTable *word_index;
     GHashTable *glyph_index;

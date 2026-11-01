@@ -321,27 +321,11 @@ EmojiPicker *emoji_picker_new(void) {
     gtk_widget_set_vexpand(p->scroll, TRUE);
     gtk_box_pack_start(GTK_BOX(root), p->scroll, TRUE, TRUE, 0);
 
+    gtk_container_add(GTK_CONTAINER(p->scroll), picker_grid_new(p));
     GtkAdjustment *vadj =
         gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(p->scroll));
     g_signal_connect(vadj, "value-changed", G_CALLBACK(picker_grid_on_vadj_changed),
                      p);
-
-    p->flow = gtk_flow_box_new();
-    gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(p->flow), 8);
-    gtk_flow_box_set_min_children_per_line(GTK_FLOW_BOX(p->flow), 1);
-    gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(p->flow), GTK_SELECTION_NONE);
-    gtk_flow_box_set_homogeneous(GTK_FLOW_BOX(p->flow), TRUE);
-    gtk_flow_box_set_row_spacing(GTK_FLOW_BOX(p->flow), 2);
-    gtk_flow_box_set_column_spacing(GTK_FLOW_BOX(p->flow), 2);
-    gtk_widget_set_can_focus(p->flow, FALSE);
-    gtk_widget_set_hexpand(p->flow, TRUE);
-    gtk_widget_set_vexpand(p->flow, FALSE);
-    gtk_widget_set_valign(p->flow, GTK_ALIGN_START);
-    gtk_widget_set_halign(p->flow, GTK_ALIGN_FILL);
-    gtk_style_context_add_provider(gtk_widget_get_style_context(p->flow),
-                                   GTK_STYLE_PROVIDER(picker_css_buttons()),
-                                   GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
-    gtk_container_add(GTK_CONTAINER(p->scroll), p->flow);
 
     p->status = gtk_label_new("");
     gtk_label_set_xalign(GTK_LABEL(p->status), 0.0f);
@@ -352,12 +336,17 @@ EmojiPicker *emoji_picker_new(void) {
     g_signal_connect(p->win, "key-press-event", G_CALLBACK(on_key_press), p);
 
     emoji_model_build_indexes(p);
-    picker_grid_ensure_pool(p, PAGE_SIZE);
 
     int start = emoji_history_count() > 0 ? TAB_HISTORY : TAB_ALL;
     gtk_notebook_set_current_page(GTK_NOTEBOOK(p->notebook), start);
     emoji_model_collect_for_tab(p, start);
     picker_grid_present_reset(p);
+
+    /* Load icon theme, CSS and fonts now (daemon start) rather than on the
+     * first Win+.: measuring the hidden window does it without mapping. */
+    gtk_widget_show_all(root);
+    gtk_widget_realize(p->win);
+    gtk_widget_get_preferred_size(p->win, NULL, NULL);
 
     return p;
 }

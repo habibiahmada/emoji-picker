@@ -37,8 +37,9 @@ tests/                   # make test
 | Module | Role |
 |--------|------|
 | `ui/popup.c` | Window shell, insert UX orchestration |
-| `ui/picker_grid.c` | Button pool, CSS, infinite scroll |
+| `ui/picker_grid.c` | Virtual grid (fixed button pool in a GtkLayout), CSS |
 | `ui/picker_dismiss.c` | Esc / outside / Alt+Tab dismiss poll |
+| `ui/picker_tone.c` | Skin-tone popover |
 | `model/emoji_model.c` | Hits list, indexes, tab/search collect |
 | `model/search_query.c` | Pure tokenize / name-match helpers |
 | `model/history.c` | Recent picks on disk |
