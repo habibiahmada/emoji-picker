@@ -13,7 +13,7 @@ toggles instantly, multi-pick without closing, paste into the **pre-picker** win
 ## Non-goals
 
 - Wayland-first / portal paste (unless the user asks)
-- Heavy skin-tone UI beyond what Unicode data already includes
+- Per-emoji skin-tone memory (one saved tone applies to every toned emoji)
 - Packaging for every distro before the local install works
 - Re-adding Emote Flatpak or `gnome-characters` as the primary picker
 
@@ -28,6 +28,8 @@ toggles instantly, multi-pick without closing, paste into the **pre-picker** win
 | Search + hits | `src/model/emoji_model.c` + `src/model/search_query.c` |
 | X11 helpers | `src/platform/x11_util.c` |
 | Recent history | `src/model/history.c` → `~/.local/share/emoji-picker/history` |
+| Skin tone | `src/model/skin_tone.c` → `~/.local/share/emoji-picker/skin-tone`; popup `src/ui/picker_tone.c` |
+| Font coverage filter | `src/platform/font_support.c` (fontconfig) |
 | Insert into apps | `src/insert/insert.c` |
 | Daemon / IPC | `src/main.c` |
 | Unit tests | `tests/` — `make test` |
@@ -67,6 +69,12 @@ sed -i 's/\r$//' scripts/*
 5. Skip taskbar / utility window; place near pointer.
 6. Search matches Unicode English names (stored lowercase).
 7. History tab shows recent picks when available; do not remove casually.
+   It shows the exact glyph picked (tone included) and inserts it as-is.
+8. Skin tone: grid shows the base (yellow) glyph until a tone is chosen. The
+   first click on a toned emoji opens the tone popup; a uniform pick is saved
+   and applied to **every** toned emoji. After that, click inserts directly;
+   right-click reopens the popup. Mixed two-person picks insert but do not
+   change the saved tone.
 
 ## Desktop integration (this machine)
 

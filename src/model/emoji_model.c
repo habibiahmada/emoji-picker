@@ -2,6 +2,7 @@
 
 #include "model/history.h"
 #include "model/search_query.h"
+#include "model/skin_tone.h"
 
 #include <string.h>
 
@@ -13,6 +14,20 @@ void emoji_model_hits_reset(EmojiPicker *p) {
         p->hit_glyphs = NULL;
     }
     p->n_hits = 0;
+}
+
+static uint16_t g_max_version = UINT16_MAX;
+
+void emoji_model_set_max_version(uint16_t version) {
+    g_max_version = version;
+}
+
+int emoji_model_version_supported(uint16_t version) {
+    return version <= g_max_version;
+}
+
+static int entry_supported(int idx) {
+    return emoji_entries[idx].version <= g_max_version;
 }
 
 void emoji_model_hits_push(EmojiPicker *p, uint16_t idx, const char *orphan_glyph) {
@@ -27,7 +42,7 @@ void emoji_model_hits_push(EmojiPicker *p, uint16_t idx, const char *orphan_glyp
         if (!p->hit_glyphs)
             p->hit_glyphs = g_malloc0((gsize)p->hits_cap * sizeof(char *));
         p->hit_glyphs[p->n_hits] = g_strdup(orphan_glyph);
-        p->hits[p->n_hits] = 0;
+        p->hits[p->n_hits] = idx;
     } else {
         if (p->hit_glyphs)
             p->hit_glyphs[p->n_hits] = NULL;
@@ -39,13 +54,23 @@ void emoji_model_hits_push(EmojiPicker *p, uint16_t idx, const char *orphan_glyp
 const char *emoji_model_hit_glyph(EmojiPicker *p, int i) {
     if (p->hit_glyphs && p->hit_glyphs[i])
         return p->hit_glyphs[i];
-    return emoji_entries[p->hits[i]].glyph;
+    return skin_tone_display_glyph(p->hits[i]);
 }
 
 const char *emoji_model_hit_name(EmojiPicker *p, int i) {
-    if (p->hit_glyphs && p->hit_glyphs[i])
+    if (p->hits[i] >= EMOJI_COUNT)
         return NULL;
     return emoji_entries[p->hits[i]].name;
+}
+
+int emoji_model_hit_tone_base(EmojiPicker *p, int i) {
+    /* Exact glyphs (History) insert as-is; only grid/search cells follow tone. */
+    if (p->hit_glyphs && p->hit_glyphs[i])
+        return -1;
+    uint16_t idx = p->hits[i];
+    if (idx >= EMOJI_COUNT || emoji_entries[idx].tones_count == 0)
+        return -1;
+    return idx;
 }
 
 static void index_add_word(GHashTable *ht, const char *word, uint16_t idx) {
@@ -71,6 +96,11 @@ void emoji_model_build_indexes(EmojiPicker *p) {
     for (int i = 0; i < EMOJI_COUNT; i++) {
         g_hash_table_insert(p->glyph_index, (gpointer)emoji_entries[i].glyph,
                             GUINT_TO_POINTER((guint)i));
+        for (int t = 0; t < emoji_entries[i].tones_count; t++)
+            g_hash_table_insert(
+                p->glyph_index,
+                (gpointer)emoji_tone_variants[emoji_entries[i].tones_start + t].glyph,
+                GUINT_TO_POINTER((guint)i));
         const char *name = emoji_entries[i].name;
         char buf[128];
         size_t n = 0;
@@ -98,14 +128,18 @@ static void collect_category(EmojiPicker *p, int category) {
     if (category < 0 || category >= EMOJI_CATEGORY_COUNT)
         return;
     EmojiCategoryRange r = emoji_category_ranges[category];
-    for (uint16_t i = 0; i < r.count; i++)
-        emoji_model_hits_push(p, (uint16_t)(r.start + i), NULL);
+    for (uint16_t i = 0; i < r.count; i++) {
+        if (entry_supported(r.start + i))
+            emoji_model_hits_push(p, (uint16_t)(r.start + i), NULL);
+    }
 }
 
 static void collect_all(EmojiPicker *p) {
     emoji_model_hits_reset(p);
-    for (int i = 0; i < EMOJI_COUNT; i++)
-        emoji_model_hits_push(p, (uint16_t)i, NULL);
+    for (int i = 0; i < EMOJI_COUNT; i++) {
+        if (entry_supported(i))
+            emoji_model_hits_push(p, (uint16_t)i, NULL);
+    }
 }
 
 static void collect_history(EmojiPicker *p) {
@@ -114,11 +148,11 @@ static void collect_history(EmojiPicker *p) {
     int n = emoji_history_count();
     for (int i = 0; i < n; i++) {
         const char *g = emoji_history_get(i);
-        gpointer val = g_hash_table_lookup(p->glyph_index, g);
-        if (val)
-            emoji_model_hits_push(p, (uint16_t)GPOINTER_TO_UINT(val), NULL);
-        else
-            emoji_model_hits_push(p, 0, g);
+        /* Keep the exact glyph picked (tone included); index gives the name. */
+        gpointer val = NULL;
+        gboolean known = g_hash_table_lookup_extended(p->glyph_index, g, NULL, &val);
+        emoji_model_hits_push(p, known ? (uint16_t)GPOINTER_TO_UINT(val) : EMOJI_NO_INDEX,
+                              g);
     }
 }
 
@@ -177,7 +211,7 @@ void emoji_model_collect_search(EmojiPicker *p, const char *query) {
 #define ADD_HIT(idx)                                                           \
     do {                                                                       \
         uint16_t _i = (uint16_t)(idx);                                         \
-        if (_i < EMOJI_COUNT && !seen[_i]) {                                   \
+        if (_i < EMOJI_COUNT && !seen[_i] && entry_supported(_i)) {                                   \
             seen[_i] = 1;                                                      \
             emoji_model_hits_push(p, _i, NULL);                                \
         }                                                                      \

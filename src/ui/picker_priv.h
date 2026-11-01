@@ -62,6 +62,7 @@ struct EmojiPicker {
     gboolean outside_btn_latched;
 
     GtkWidget *status;
+    GtkWidget *tone_popover;
 
     int pos_x;
     int pos_y;

@@ -38,8 +38,25 @@ static void test_collect_all_count(void) {
     g_free(p);
 }
 
+static void test_max_version_hides_newer(void) {
+    int newer = 0;
+    for (int i = 0; i < EMOJI_COUNT; i++)
+        newer += emoji_entries[i].version > 160;
+    TEST_ASSERT(newer > 0);
+
+    EmojiPicker *p = g_new0(EmojiPicker, 1);
+    emoji_model_set_max_version(160);
+    emoji_model_collect_for_tab(p, TAB_ALL);
+    TEST_ASSERT(p->n_hits == EMOJI_COUNT - newer);
+    emoji_model_set_max_version(UINT16_MAX);
+    emoji_model_hits_reset(p);
+    g_free(p->hits);
+    g_free(p);
+}
+
 int main(void) {
     TEST_RUN(test_search_cat_finds_entries);
     TEST_RUN(test_collect_all_count);
+    TEST_RUN(test_max_version_hides_newer);
     return test_finish();
 }

@@ -3,6 +3,7 @@ emoji-picker
 test_search_query
 test_history
 test_emoji_model
+test_skin_tone
 *.o
 dist/
 
