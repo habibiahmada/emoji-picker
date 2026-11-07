@@ -7,9 +7,9 @@ that point here so you never maintain five copies of the same rules.
 
 | Tool | Stub / discovery path | Notes |
 |------|----------------------|--------|
-| [Cursor](cursor.md) | `.cursor/rules/*.mdc`, root `AGENTS.md` | Rules always applied via `.mdc` |
+| [Cursor](cursor.md) | root `AGENTS.md` | No `.cursor/rules/` stub |
 | [Antigravity](antigravity.md) | `.agent/rules/*.md`, root `AGENTS.md` | Prefers `.agents/rules`; `.agent/rules` still supported |
-| [Kiro](kiro.md) | `.kiro/steering/*.md`, root `AGENTS.md` | Steering + AGENTS.md always-on |
+| [Kiro](kiro.md) | root `AGENTS.md` | No `.kiro/steering/` stub |
 | [GitHub Copilot](copilot.md) | `.github/copilot-instructions.md` | Plus optional `.github/instructions/` |
 | [Claude Code](claude.md) | `CLAUDE.md` | Optional `.claude/rules/` |
 | Graphify | `.agent/GRAPHIFY.md` | Skill via `graphify install --platform …` |

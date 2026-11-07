@@ -21,14 +21,21 @@ static char *sock_path(void) {
 }
 
 static void handle_cmd(const char *buf) {
-    if (g_str_has_prefix(buf, "show") || g_str_has_prefix(buf, "toggle")) {
-        if (gtk_widget_get_visible(emoji_picker_window(g_picker)))
-            gtk_widget_hide(emoji_picker_window(g_picker));
-        else
-            emoji_picker_show(g_picker);
-    } else if (g_str_has_prefix(buf, "hide")) {
-        gtk_widget_hide(emoji_picker_window(g_picker));
-    }
+    GtkWidget *win = emoji_picker_window(g_picker);
+    gboolean visible = gtk_widget_get_visible(win);
+    gboolean want;
+    if (g_str_has_prefix(buf, "toggle"))
+        want = !visible;
+    else if (g_str_has_prefix(buf, "show"))
+        want = TRUE;
+    else if (g_str_has_prefix(buf, "hide"))
+        want = FALSE;
+    else
+        return;
+    if (want && !visible)
+        emoji_picker_show(g_picker);
+    else if (!want && visible)
+        gtk_widget_hide(win);
 }
 
 /* recv() per datagram: a buffered GIOChannel merged back-to-back toggles. */
@@ -96,7 +103,7 @@ static gboolean on_delete(GtkWidget *w, GdkEvent *e, gpointer data) {
 }
 
 #ifndef APP_VERSION
-#define APP_VERSION "0.4.0"
+#define APP_VERSION "0.5.0"
 #endif
 
 int main(int argc, char **argv) {

@@ -11,7 +11,7 @@ Read `.agent/CONTEXT.md` and `.agent/RULES.md` before changing behavior.
 
 - Regenerate emoji tables with `make data`; never hand-edit `src/generated/`.
 - Keep insert targeting the pre-picker X11 window (`emoji_insert_set_target`).
-- Keep multi-pick: picker stays visible on emoji click; close only Esc / outside / focus-out.
+- Keep multi-pick: picker stays visible on emoji click; close only on Esc / click-outside / typing in another app / Alt+Tab.
 - Prefer C/GTK3; do not introduce Electron, Flatpak, or Python UI.
 - After install changes: `systemctl --user restart emoji-picker.service`.
 - Shortcut changes: Openbox + LXQt (or GUI) and `docs/SHORTCUTS.md`.

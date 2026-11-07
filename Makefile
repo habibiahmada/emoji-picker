@@ -1,4 +1,4 @@
-VERSION ?= 0.4.0
+VERSION ?= 0.5.0
 CC ?= gcc
 CFLAGS ?= -O2 -pipe -Wall -Wextra
 CPPFLAGS ?= -Isrc -Isrc/generated -DAPP_VERSION=\"$(VERSION)\"

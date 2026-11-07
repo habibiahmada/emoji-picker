@@ -126,20 +126,19 @@ Or by hand: download \`${STAGE_NAME}.tar.gz\` below, then \`tar -xzf ${STAGE_NAM
 
 ## 🚀 What's New in ${TAG}
 
-### 🎨 Skin tones
-- **2,030 skin-tone variants** (Unicode 17) for 330 emoji, without filling the grid with duplicates.
-- First click on a toned emoji opens a tone picker; your choice is saved and applied to **every** toned emoji. Right-click any toned emoji to change it.
-- Two-person emoji (🤝 💏 👫 …) also offer mixed per-person tones.
-- Emoji newer than your installed color emoji font are hidden instead of drawn as empty boxes.
+### 🔎 Search that understands everyday words
+- Search matches keywords, not only the official Unicode name: \`rock\`, \`stone\` or \`batu\` find 🗿, \`fire\` lists 🔥 first.
+- Indonesian works too (\`ngakak\`, \`jempol\`, \`geleng\`, \`kucing\`), from Unicode CLDR keywords plus a small list for slang (\`wkwk\`, \`galau\`, \`santuy\`, \`otw\`).
+- Results are ranked: exact name, then name word, then keyword, then prefixes.
 
-### ⚡ No more freezes
-- The picker no longer runs \`xdotool\` 20×/s while open; it reads the active window over its own X connection. This was the main cause of the popup not appearing and slow inserts under load.
-- Copy → focus → Ctrl+V now run strictly in order, rapid picks are queued, and the clipboard is cleared only after the paste was sent.
-- Virtual emoji grid: scrolling "All" costs the same as a small category (worst stall 64 ms → ~6 ms), daemon RSS with the grid open ~60 MB → ~44 MB.
-- First Win+. after login is faster (icon theme loaded at daemon start); quick double Win+. presses are no longer merged.
+### 📦 One-line install
+- \`curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | sh\` installs the latest release: no clone, no compiler, SHA-256 verified. Run it again to update.
 
-### 🧪 Quality
-- Unit tests for skin tones and the virtual grid; CI now runs \`make test\` on every push and before each release.
+### 🆕 Unicode 18
+- 9 new emoji (e.g. cracking face). They appear once your color emoji font supports them.
+
+### 🐛 Fixes
+- \`emoji-picker --show\` no longer hides an already open picker.
 
 ---
 

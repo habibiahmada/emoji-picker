@@ -2,8 +2,12 @@
 
 ## Supported versions
 
-Security fixes are applied to the latest `main` branch. There are no long-term
-support releases yet — please upgrade to the newest commit when a fix lands.
+Security fixes land on `main` and ship in the next release. Only the latest
+release is supported; re-run the installer to upgrade:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | sh
+```
 
 ## Reporting a vulnerability
 
@@ -34,6 +38,7 @@ that are especially useful:
 - Abuse of `$XDG_RUNTIME_DIR/emoji-picker.sock` by other local users
 - Unexpected focus / typing into the wrong window
 - Path or command injection via generated data / scripts
+- Tampering with the one-line installer (`get.sh`) or release downloads
 
 Out of scope (unless they enable privilege escalation beyond the user session):
 
