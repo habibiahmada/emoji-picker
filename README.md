@@ -66,45 +66,85 @@ Picker on the desktop (LXQt):
 
 ## Quick start
 
-### One-step installation (recommended)
-
-Clone and run the installer:
+One command, no clone and no compiler. It downloads the latest prebuilt release,
+checks its SHA-256 and installs it:
 
 ```bash
-git clone https://github.com/habibiahmada/emoji-picker.git
-cd emoji-picker
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | sh
 ```
 
 **That's it! 🎉** Press **Win + .** (`Super+Period`) anywhere to toggle the emoji picker.
 
-#### What `./install.sh` does automatically:
-1. **Checks dependencies** (runtime & build) and detects your package manager if anything is missing.
-2. **Builds the binary** if not already compiled (`make data && make`).
-3. **Installs binary** to `~/.local/bin/emoji-picker`.
-4. **Configures & starts systemd user service** with proper X11 `DISPLAY` and `XAUTHORITY` drop-in configuration.
-5. **Configures global shortcut (Win+.)** automatically for your desktop environment:
-   - **LXQt**: registers `Meta+period` in `globalkeyshortcuts.conf` and reloads `lxqt-globalkeysd`.
-   - **Openbox**: adds `<keybind key="W-period">` to `rc.xml` and triggers `openbox --reconfigure`.
-   - **GNOME**: adds custom keybinding via `gsettings`.
-   - **XFCE**: configures `<Super>period` via `xfconf-query`.
-   - **i3 / Sway**: appends shortcut to config and reloads.
-6. **Verifies installation** and ensures the warm daemon is active.
-
----
-
-### Pre-built binary from Releases
-
-If you downloaded a release from [GitHub Releases](https://github.com/habibiahmada/emoji-picker/releases):
+Runtime packages it needs (the installer tells you if one is missing):
 
 ```bash
-tar -xzf emoji-picker-*-linux-x86_64.tar.gz
-cd emoji-picker-*-linux-x86_64
-./install.sh
+sudo apt install xdotool xclip fonts-noto-color-emoji
 ```
 
+### Where it goes
+
+Everything is per-user, nothing needs `sudo`, and no download is left behind:
+
+| What | Where |
+| --- | --- |
+| Binary | `~/.local/bin/emoji-picker` |
+| Autostart (systemd user service) | `~/.config/systemd/user/emoji-picker.service` |
+| History + saved skin tone | `~/.local/share/emoji-picker/` |
+| Win+. shortcut | your desktop's own config (LXQt, Openbox, GNOME, XFCE, i3, Sway) |
+
+### Update, uninstall, options
+
+```bash
+# Update: run the same command again
+curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | sh
+
+# Uninstall
+curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | sh -s -- --uninstall
+
+# Any install.sh option works after "sh -s --", e.g. skip the shortcut
+curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | sh -s -- --no-shortcut
+
+# Pin a version
+curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | EMOJI_PICKER_VERSION=0.4.0 sh
+```
+
+Prebuilt binaries are x86_64 and built on Ubuntu 24.04 (glibc 2.39). On other
+architectures or older distros, build from source.
+
 <details>
-<summary>Manual build & advanced options</summary>
+<summary>What the installer does</summary>
+
+1. **Checks runtime dependencies** (`xdotool`, `xclip`, color emoji font) and prints the package command if any is missing.
+2. **Installs the binary** to `~/.local/bin/emoji-picker`.
+3. **Configures & starts the systemd user service** with the X11 `DISPLAY` and `XAUTHORITY` drop-in.
+4. **Configures the global shortcut (Win+.)** for your desktop:
+   - **LXQt**: registers `Meta+period` in `globalkeyshortcuts.conf` and reloads `lxqt-globalkeysd`.
+   - **Openbox**: adds `<keybind key="W-period">` to `rc.xml` and runs `openbox --reconfigure`.
+   - **GNOME**: adds a custom keybinding via `gsettings`.
+   - **XFCE**: configures `<Super>period` via `xfconf-query`.
+   - **i3 / Sway**: appends the shortcut to the config and reloads.
+5. **Verifies** the install and that the daemon is running.
+
+You can also download the tarball from
+[GitHub Releases](https://github.com/habibiahmada/emoji-picker/releases) yourself,
+extract it and run `./install.sh` inside.
+</details>
+
+### From source
+
+For hacking on the code, or on a machine without a prebuilt binary:
+
+```bash
+git clone https://github.com/habibiahmada/emoji-picker.git
+cd emoji-picker
+./install.sh          # builds (make data && make) if needed, then installs as above
+```
+
+The clone is only source code: the app itself still lands in `~/.local`. In a
+clone, `./install.sh --update` pulls and rebuilds (`--check-update` only checks).
+
+<details>
+<summary>Build dependencies & installer options</summary>
 
 **Installer options:**
 ```bash
@@ -120,15 +160,15 @@ cd emoji-picker-*-linux-x86_64
 **Dependencies:**
 - Debian / Ubuntu / Lubuntu:
   ```bash
-  sudo apt install build-essential pkg-config libgtk-3-dev libx11-dev xdotool fonts-noto-color-emoji xclip
+  sudo apt install build-essential pkg-config libgtk-3-dev libx11-dev libfontconfig-dev xdotool fonts-noto-color-emoji xclip
   ```
 - Fedora:
   ```bash
-  sudo dnf install gcc make pkg-config gtk3-devel libX11-devel xdotool google-noto-color-emoji-fonts xclip
+  sudo dnf install gcc make pkg-config gtk3-devel libX11-devel fontconfig-devel xdotool google-noto-color-emoji-fonts xclip
   ```
 - Arch Linux / Manjaro:
   ```bash
-  sudo pacman -S --needed base-devel gtk3 libx11 xdotool noto-fonts-emoji xclip
+  sudo pacman -S --needed base-devel gtk3 libx11 fontconfig xdotool noto-fonts-emoji xclip
   ```
 
 **Manual compilation with Makefile:**
@@ -142,21 +182,6 @@ See [docs/SHORTCUTS.md](docs/SHORTCUTS.md) for manual shortcut configuration det
 </details>
 
 Maintainer note: ship a release with `./scripts/release.sh 0.4.0 --publish` (or push a `v*` tag).
-
-## Updating
-
-Check for updates or upgrade to the newest release anytime:
-
-```bash
-# Check if an update is available:
-./install.sh --check-update
-
-# Upgrade to the latest version:
-./install.sh --update
-# (or 'make update')
-```
-
-This automatically checks Git origin (or GitHub releases for standalone installs), refreshes Unicode data, recompiles, re-installs, and restarts the background daemon.
 
 ## Usage
 
@@ -219,7 +244,8 @@ emoji-picker/
 ## Uninstall
 
 ```bash
-make uninstall
+curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | sh -s -- --uninstall
+# or, in a clone: make uninstall
 # optionally remove shortcut bindings from Openbox / LXQt
 ```
 

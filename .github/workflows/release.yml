@@ -44,7 +44,9 @@ jobs:
 
           ### Install
 
-          Unpack the \`.tar.gz\` and follow \`INSTALL.txt\` (user-local binary + systemd user unit).
+          \`curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | sh\`
+
+          Or unpack the \`.tar.gz\` and follow \`INSTALL.txt\` (user-local binary + systemd user unit).
 
           Runtime deps (Debian/Ubuntu): \`libgtk-3-0\`, \`xdotool\`, \`fonts-noto-color-emoji\`.
           EOF

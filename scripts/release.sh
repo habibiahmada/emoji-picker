@@ -98,15 +98,15 @@ Fast, memory-efficient (~30 MB RSS resident), warm daemon for instant **Win+.** 
 
 ---
 
-## ⚡ Quick Install (One-Step)
+## ⚡ Quick Install (One Line)
 
-Download and extract the release asset, then run the installer:
+No clone, no compiler: downloads this release, checks its SHA-256 and installs it to \`~/.local\`:
 
 \`\`\`bash
-tar -xzf ${STAGE_NAME}.tar.gz
-cd ${STAGE_NAME}
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.sh | sh
 \`\`\`
+
+Or by hand: download \`${STAGE_NAME}.tar.gz\` below, then \`tar -xzf ${STAGE_NAME}.tar.gz && cd ${STAGE_NAME} && ./install.sh\`.
 
 **Done!** Press **Win + .** (\`Super+Period\`) anywhere to open the emoji picker.
 
