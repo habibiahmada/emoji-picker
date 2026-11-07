@@ -6,8 +6,8 @@
 #include <stdint.h>
 
 #define EMOJI_CATEGORY_COUNT 9
-#define EMOJI_COUNT 1914
-#define EMOJI_TONE_VARIANT_COUNT 2030
+#define EMOJI_COUNT 1923
+#define EMOJI_TONE_VARIANT_COUNT 2040
 
 typedef struct {
     const char *glyph;    /* UTF-8 emoji */
