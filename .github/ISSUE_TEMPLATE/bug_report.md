@@ -13,7 +13,7 @@ labels: bug
 - OS / distro:
 - Desktop (e.g. LXQt + Openbox):
 - Display server: X11 / other:
-- emoji-picker commit or install path:
+- emoji-picker version (`emoji-picker --version`) and install method (one-line / clone):
 - Relevant packages (`libgtk-3`, `xdotool`, emoji fonts):
 
 ## Steps to reproduce
