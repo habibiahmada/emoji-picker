@@ -232,6 +232,54 @@ UPDATE_DRY_RUN_OUT=$("$INSTALLER" --update --dry-run)
 assert_contains "Updating emoji-picker" "$UPDATE_DRY_RUN_OUT" "--update should initiate update process"
 assert_contains "[dry-run]" "$UPDATE_DRY_RUN_OUT" "--update --dry-run should indicate dry-run steps"
 
+# 12. One-line installer (get.sh) against a local release, no network
+echo "[Test 12] get.sh installs a verified release tarball"
+GET_SH="$ROOT_DIR/get.sh"
+RELEASE_DIR=$(mktemp -d)
+GET_PREFIX=$(mktemp -d)
+STAGE="$RELEASE_DIR/emoji-picker-9.9.9-linux-x86_64"
+mkdir -p "$STAGE"
+printf '#!/bin/sh\necho "emoji-picker 9.9.9"\n' > "$STAGE/emoji-picker"
+chmod +x "$STAGE/emoji-picker"
+cp "$INSTALLER" "$STAGE/install.sh"
+cp "$ROOT_DIR/pack/emoji-picker.service" "$STAGE/emoji-picker.service"
+tar -C "$RELEASE_DIR" -czf "$STAGE.tar.gz" "$(basename "$STAGE")"
+(cd "$RELEASE_DIR" && sha256sum "$(basename "$STAGE").tar.gz" > "$(basename "$STAGE").sha256")
+rm -rf "$STAGE"
+
+if [[ "$(uname -m)" == "x86_64" ]]; then
+  set +e
+  GET_OUT=$(EMOJI_PICKER_VERSION=v9.9.9 EMOJI_PICKER_BASE_URL="file://$RELEASE_DIR" \
+    sh "$GET_SH" --prefix="$GET_PREFIX" --no-service --no-shortcut < /dev/null 2>&1)
+  status=$?
+  set -e
+  assert_eq "0" "$status" "get.sh should exit 0 for a valid release"
+  assert_contains "downloading v9.9.9" "$GET_OUT" "get.sh should strip a leading v from the version"
+  assert_eq "emoji-picker 9.9.9" "$("$GET_PREFIX/bin/emoji-picker" 2>/dev/null)" "get.sh should install the release binary"
+
+  echo "[Test 13] get.sh rejects a tampered tarball"
+  rm -rf "$GET_PREFIX" && mkdir -p "$GET_PREFIX"
+  printf 'x' >> "$RELEASE_DIR/emoji-picker-9.9.9-linux-x86_64.tar.gz"
+  set +e
+  GET_OUT=$(EMOJI_PICKER_VERSION=9.9.9 EMOJI_PICKER_BASE_URL="file://$RELEASE_DIR" \
+    sh "$GET_SH" --prefix="$GET_PREFIX" --no-service --no-shortcut < /dev/null 2>&1)
+  status=$?
+  set -e
+  assert_eq "1" "$status" "get.sh should fail on checksum mismatch"
+  assert_contains "checksum mismatch" "$GET_OUT" "get.sh should say why it failed"
+  assert_eq "false" "$([[ -e "$GET_PREFIX/bin/emoji-picker" ]] && echo true || echo false)" "Nothing should be installed from a bad tarball"
+
+  echo "[Test 14] get.sh reports a missing release"
+  set +e
+  GET_OUT=$(EMOJI_PICKER_VERSION=0.0.1 EMOJI_PICKER_BASE_URL="file://$RELEASE_DIR" \
+    sh "$GET_SH" --prefix="$GET_PREFIX" < /dev/null 2>&1)
+  status=$?
+  set -e
+  assert_eq "1" "$status" "get.sh should fail when the tarball is missing"
+  assert_contains "download failed" "$GET_OUT" "get.sh should name the failed download"
+fi
+rm -rf "$RELEASE_DIR" "$GET_PREFIX"
+
 echo ""
 echo "=== Test Results: $PASS_COUNT passed, $FAIL_COUNT failed ==="
 if [[ $FAIL_COUNT -gt 0 ]]; then
