@@ -59,7 +59,7 @@ Run unit tests: `make test`.
 
 Socket: `$XDG_RUNTIME_DIR/emoji-picker.sock` (fallback `/tmp`).
 
-Messages: `toggle`, `show`, `hide` (prefix match). `show` currently toggles too.
+Messages: `toggle`, `show`, `hide` (prefix match).
 
 Only one daemon should bind the socket. A second process without `--daemon` may
 still open a one-shot window if bind fails.
