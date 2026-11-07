@@ -41,7 +41,7 @@ tests/                   # make test
 | `ui/picker_dismiss.c` | Esc / outside / Alt+Tab dismiss poll |
 | `ui/picker_tone.c` | Skin-tone popover |
 | `model/emoji_model.c` | Hits list, indexes, tab/search collect |
-| `model/search_query.c` | Pure tokenize / name-match helpers |
+| `model/search_query.c` | Pure tokenize / match-scoring helpers (name vs keyword) |
 | `model/history.c` | Recent picks on disk |
 | `insert/insert.c` | xclip + windowfocus Ctrl+V + clear clipboard |
 | `platform/x11_util.c` | Active window / toplevel helpers |

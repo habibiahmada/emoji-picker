@@ -15,10 +15,14 @@ int search_tokenize_query(const char *q, char tokens[][EMOJI_SEARCH_TOKEN_LEN],
 /* True if token is non-empty ASCII alphanumeric (not an emoji glyph). */
 int search_token_is_ascii_word(const char *tok);
 
-/* Every token must appear as a substring of name (already lowercase). */
-gboolean search_name_has_all_tokens(const char *name,
-                                    char tokens[][EMOJI_SEARCH_TOKEN_LEN],
-                                    int ntok);
+/*
+ * How well one lowercase token matches an emoji, best first:
+ * 5 = the whole name, 4 = a whole name word, 3 = a whole keyword,
+ * 2 = start of a name word, 1 = start of a keyword or anywhere in the name,
+ * 0 = no match. A whole word beats a prefix: "rock" puts 🗿 before 🚀.
+ * keywords may be NULL.
+ */
+int search_token_score(const char *name, const char *keywords, const char *tok);
 
 /*
  * Copy q into out, lowercasing A–Z only (UTF-8 emoji glyphs stay intact).

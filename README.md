@@ -22,7 +22,9 @@ focused before** the picker opened — so you can keep multi-picking without fig
 ## Features
 
 - Full Unicode set from official `emoji-test.txt` (refresh anytime)
-- Search by English name (`smile`, `fire`, `cat`, …)
+- Search by name or keyword, in English or Indonesian (`fire`, `statue`,
+  `ngakak`, `jempol`, …): CLDR keywords plus `data/keywords-extra.txt` for slang;
+  exact name matches rank first
 - Category tabs + recent history
 - Skin tones: pick once, applied to every toned emoji (right-click to change);
   two-person emoji also offer mixed tones
@@ -40,8 +42,8 @@ Built for low-RAM X11 desktops — not another Electron/Flatpak resident.
 
 | Metric                                | Value                    |
 | ------------------------------------- | ------------------------ |
-| Binary on disk                        | **~380 KB**              |
-| Emoji table (generated)               | 1914 glyphs + 2030 skin-tone variants |
+| Binary on disk                        | **~570 KB**              |
+| Emoji table (generated)               | 1923 glyphs + 2040 skin-tone variants |
 | Daemon RSS (idle)                     | **~30 MB**               |
 | Daemon RSS (popup open)               | **~45 MB**               |
 | PSS idle / open (fairer share of GTK) | **~12 / ~18 MB**         |
@@ -199,11 +201,12 @@ Esc or focus loss hides the window; the process keeps running.
 ## Update emoji database
 
 ```bash
-make data    # https://www.unicode.org/Public/emoji/latest/emoji-test.txt
+make data    # Unicode emoji-test.txt + CLDR keyword annotations (en, id)
 make && make install
 ```
 
-Pin a version: `UNICODE_VER=15.1 make data`.
+Pin a version: `UNICODE_VER=15.1 make data` (CLDR: `CLDR_VER=release-49`).
+Add everyday search words for an emoji in `data/keywords-extra.txt`.
 
 ## Docs (human-friendly)
 
@@ -272,8 +275,8 @@ Agent / automation notes: [AGENTS.md](AGENTS.md).
 
 This project is released under the [MIT License](LICENSE).
 
-Emoji names and glyphs are derived from Unicode’s `emoji-test.txt` (fetched at
-`make data`). Unicode data files are subject to the
+Emoji names and glyphs are derived from Unicode’s `emoji-test.txt`, and search
+keywords from Unicode CLDR annotations (both fetched at `make data`). Unicode data files are subject to the
 [Unicode License](https://www.unicode.org/license.txt).
 
 ## Author

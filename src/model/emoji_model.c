@@ -4,6 +4,7 @@
 #include "model/search_query.h"
 #include "model/skin_tone.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 void emoji_model_hits_reset(EmojiPicker *p) {
@@ -83,6 +84,27 @@ static void index_add_word(GHashTable *ht, const char *word, uint16_t idx) {
     g_array_append_val(arr, idx);
 }
 
+/* Split on space / - / _ like the query tokenizer. */
+static void index_add_text(GHashTable *ht, const char *text, uint16_t idx) {
+    char buf[128];
+    size_t n = 0;
+    for (const char *s = text;; s++) {
+        char c = *s;
+        if (c && c != ' ' && c != '-' && c != '_') {
+            if (n + 1 < sizeof(buf))
+                buf[n++] = c;
+            continue;
+        }
+        if (n > 0) {
+            buf[n] = 0;
+            index_add_word(ht, buf, idx);
+            n = 0;
+        }
+        if (!c)
+            break;
+    }
+}
+
 static void free_index_array(gpointer data) {
     g_array_free((GArray *)data, TRUE);
 }
@@ -101,24 +123,8 @@ void emoji_model_build_indexes(EmojiPicker *p) {
                 p->glyph_index,
                 (gpointer)emoji_tone_variants[emoji_entries[i].tones_start + t].glyph,
                 GUINT_TO_POINTER((guint)i));
-        const char *name = emoji_entries[i].name;
-        char buf[128];
-        size_t n = 0;
-        for (const char *s = name;; s++) {
-            char c = *s;
-            if (c && c != ' ' && c != '-' && c != '_') {
-                if (n + 1 < sizeof(buf))
-                    buf[n++] = c;
-                continue;
-            }
-            if (n > 0) {
-                buf[n] = 0;
-                index_add_word(p->word_index, buf, (uint16_t)i);
-                n = 0;
-            }
-            if (!c)
-                break;
-        }
+        index_add_text(p->word_index, emoji_entries[i].name, (uint16_t)i);
+        index_add_text(p->word_index, emoji_entries[i].keywords, (uint16_t)i);
     }
     p->index_ready = TRUE;
 }
@@ -185,6 +191,19 @@ static int uint16_cmp(const void *a, const void *b) {
     return (x > y) - (x < y);
 }
 
+typedef struct {
+    uint16_t idx;
+    int score;
+} ScoredHit;
+
+/* Best score first; ties keep Unicode order. */
+static int scored_hit_cmp(const void *a, const void *b) {
+    const ScoredHit *x = a, *y = b;
+    if (x->score != y->score)
+        return y->score - x->score;
+    return (x->idx > y->idx) - (x->idx < y->idx);
+}
+
 static void unique_sorted(GArray *arr) {
     if (arr->len < 2)
         return;
@@ -248,11 +267,29 @@ void emoji_model_collect_search(EmojiPicker *p, const char *query) {
         candidates_for_token(p, words[seed], cands);
         unique_sorted(cands);
 
+        /* Every word must match the name or keywords; name matches rank
+         * first, so "stone" lists 🥌 💎 before 🗿 (keyword only). */
+        ScoredHit *scored = g_new(ScoredHit, cands->len ? cands->len : 1);
+        guint n_scored = 0;
         for (guint i = 0; i < cands->len; i++) {
             uint16_t idx = g_array_index(cands, uint16_t, i);
-            if (search_name_has_all_tokens(emoji_entries[idx].name, words, ntok))
-                ADD_HIT(idx);
+            int total = 0;
+            for (int t = 0; t < ntok; t++) {
+                int s = search_token_score(emoji_entries[idx].name,
+                                           emoji_entries[idx].keywords, words[t]);
+                if (!s) {
+                    total = 0;
+                    break;
+                }
+                total += s;
+            }
+            if (total)
+                scored[n_scored++] = (ScoredHit){idx, total};
         }
+        qsort(scored, n_scored, sizeof(ScoredHit), scored_hit_cmp);
+        for (guint i = 0; i < n_scored; i++)
+            ADD_HIT(scored[i].idx);
+        g_free(scored);
         g_array_free(cands, TRUE);
     }
 
