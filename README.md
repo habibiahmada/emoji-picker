@@ -11,8 +11,6 @@ No Electron. No Flatpak tax. A warm daemon so the shortcut feels instant.
 
 ![emoji-picker popup](docs/screenshots/picker-hero.png)
 
-![Browse all emoji](docs/screenshots/picker-overview.png)   ![Search for cat](docs/screenshots/picker-search-cat.png)   ![Search results](docs/screenshots/picker-search.png)
-
 ## Why this exists
 
 On a low-RAM desktop, “just install another Flatpak emoji app” is the wrong trade.
@@ -21,24 +19,20 @@ focused before** the picker opened — so you can keep multi-picking without fig
 
 ## Features
 
-- Full Unicode set from official `emoji-test.txt` (refresh anytime)
+- Full Unicode emoji set (Unicode 18) from the official `emoji-test.txt`
 - Search by name or keyword, in English or Indonesian (`fire`, `statue`,
-  `ngakak`, `jempol`, …): CLDR keywords plus `data/keywords-extra.txt` for slang;
-  exact name matches rank first
+  `ngakak`, `jempol`, …); exact name matches rank first
 - Category tabs + recent history
 - Skin tones: pick once, applied to every toned emoji (right-click to change);
   two-person emoji also offer mixed tones
-- Popup near the pointer; skip taskbar; Esc / click-outside to dismiss
-- Stays open for multi-pick (closes on Esc / outside / typing / Alt+Tab)
-- Inserts via clipboard into the pre-picker window; clears clipboard after paste
-- Daemon + Unix socket: `emoji-picker --toggle` from a global shortcut
-
-
+- Opens near the pointer, stays open for multi-pick, and closes on Esc, a click
+  outside, typing in another app or Alt+Tab
+- Pastes into the window you were using before; clears the clipboard afterwards
+- Warm daemon + Unix socket: `emoji-picker --toggle` from a global shortcut
 
 ## Lightweight by design
 
 Built for low-RAM X11 desktops — not another Electron/Flatpak resident.
-
 
 | Metric                                | Value                    |
 | ------------------------------------- | ------------------------ |
@@ -48,19 +42,18 @@ Built for low-RAM X11 desktops — not another Electron/Flatpak resident.
 | Daemon RSS (popup open)               | **~45 MB**               |
 | PSS idle / open (fairer share of GTK) | **~12 / ~18 MB**         |
 
-
 Compared to the earlier naïve UI (~157 MB RSS from thousands of live widgets), the
-pool + pagination design keeps the warm daemon small enough to leave running.
+virtual grid (a small pool of buttons reused while scrolling) keeps the warm
+daemon small enough to leave running.
 
 ![htop showing emoji-picker ~31 MB RES](docs/screenshots/htop-resources.png)
 
 ## Screenshots
 
-
 | Browse                                            | Search                                                |
 | ------------------------------------------------- | ----------------------------------------------------- |
 | ![overview](docs/screenshots/picker-overview.png) | ![cat search](docs/screenshots/picker-search-cat.png) |
-
+|                                                   | ![fire search](docs/screenshots/picker-search.png)    |
 
 Picker on the desktop (LXQt):
 
@@ -183,7 +176,7 @@ make install                  # Runs ./install.sh
 See [docs/SHORTCUTS.md](docs/SHORTCUTS.md) for manual shortcut configuration details.
 </details>
 
-Maintainer note: ship a release with `./scripts/release.sh 0.4.0 --publish` (or push a `v*` tag).
+Maintainers: see [docs/RELEASES.md](docs/RELEASES.md) for the release flow.
 
 ## Usage
 
@@ -196,7 +189,8 @@ Maintainer note: ship a release with `./scripts/release.sh 0.4.0 --publish` (or 
 | `emoji-picker --version`         | Print version information                 |
 | `emoji-picker --help`            | Print CLI help and options                |
 
-Esc or focus loss hides the window; the process keeps running.
+Esc, a click outside, typing in another app or Alt+Tab hides the window; the
+daemon keeps running.
 
 ## Update emoji database
 
@@ -210,7 +204,6 @@ Add everyday search words for an emoji in `data/keywords-extra.txt`.
 
 ## Docs (human-friendly)
 
-
 | Doc                                          | About                                                                                   |
 | -------------------------------------------- | --------------------------------------------------------------------------------------- |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the pieces fit                                                                      |
@@ -218,31 +211,30 @@ Add everyday search words for an emoji in `data/keywords-extra.txt`.
 | [docs/SHORTCUTS.md](docs/SHORTCUTS.md)       | Win+. on LXQt + Openbox                                                                 |
 | [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md)   | How screenshots were taken                                                              |
 | [docs/RELEASES.md](docs/RELEASES.md)         | GitHub Releases publish/install                                                         |
-| `[.agent/](.agent/)`                         | **All** AI-agent rules & context (Cursor, Antigravity, Kiro, Copilot, Claude, Graphify) |
-
-
-
+| [.agent/](.agent/)                           | **All** AI-agent rules & context (Claude, Copilot, Cursor, Kiro, Antigravity, Graphify) |
 
 ## Project layout
 
 ```
 emoji-picker/
-├── .agent/
-├── Makefile                # make / make test / make install
-├── pack/
-├── scripts/
+├── .agent/                 # AI-agent context and rules
+├── get.sh                  # one-line installer (downloads a release)
+├── install.sh              # installer (builds from a clone if needed)
+├── Makefile                # make / make data / make test / make install
+├── data/
+│   └── keywords-extra.txt  # hand-kept search words (rest is fetched)
+├── pack/                   # systemd user unit
+├── scripts/                # data fetch/generate, release
 ├── tests/
 ├── src/
 │   ├── main.c              # daemon, socket IPC
-│   ├── ui/                 # GTK shell, grid, dismiss
-│   ├── model/              # search, hits, history
+│   ├── ui/                 # GTK shell, virtual grid, tone popover, dismiss
+│   ├── model/              # search, hits, history, skin tone
 │   ├── insert/             # clipboard paste into apps
-│   ├── platform/           # X11 helpers
-│   └── generated/          # DO NOT hand-edit
+│   ├── platform/           # X11 + font coverage helpers
+│   └── generated/          # DO NOT hand-edit (make data)
 └── docs/
 ```
-
-
 
 ## Uninstall
 
@@ -252,8 +244,6 @@ curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.
 # optionally remove shortcut bindings from Openbox / LXQt
 ```
 
-
-
 ## Limitations
 
 - **X11 only** (GTK + xclip on X). Wayland needs a different path.
@@ -261,8 +251,6 @@ curl -fsSL https://raw.githubusercontent.com/habibiahmada/emoji-picker/main/get.
   `windowfocus` + Ctrl+V after releasing the GTK click grab.
 - Emoji newer than the installed color emoji font (e.g. Unicode 17 on Noto 2.047)
   are hidden instead of drawn as empty boxes; update the font to see them.
-
-
 
 ## Contributing
 
@@ -276,8 +264,8 @@ Agent / automation notes: [AGENTS.md](AGENTS.md).
 This project is released under the [MIT License](LICENSE).
 
 Emoji names and glyphs are derived from Unicode’s `emoji-test.txt`, and search
-keywords from Unicode CLDR annotations (both fetched at `make data`). Unicode data files are subject to the
-[Unicode License](https://www.unicode.org/license.txt).
+keywords from Unicode CLDR annotations (both fetched at `make data`). Unicode
+data files are subject to the [Unicode License](https://www.unicode.org/license.txt).
 
 ## Author
 
@@ -286,8 +274,6 @@ keywords from Unicode CLDR annotations (both fetched at `make data`). Unicode da
 - Portfolio: [habibiahmada.dev](https://habibiahmada.dev)
 - Email: [contact@habibiahmada.dev](mailto:contact@habibiahmada.dev)
 - GitHub: [@habibiahmada](https://github.com/habibiahmada)
-
-
 
 ## Thanks
 
