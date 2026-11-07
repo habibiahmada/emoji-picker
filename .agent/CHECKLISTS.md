@@ -25,5 +25,5 @@
 ## Agent docs
 
 - [ ] Edit `.agent/` first (CONTEXT / RULES / CHECKLISTS)
-- [ ] Stubs still point here (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, …)
+- [ ] Stubs still point here (`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`)
 - [ ] If Graphify graph is stale after large refactors: `graphify update .`

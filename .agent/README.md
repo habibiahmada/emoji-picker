@@ -15,12 +15,12 @@ Agents: read the files below before changing behavior, shortcuts, or generated d
 | [CHECKLISTS.md](CHECKLISTS.md) | Agents | Pre-finish checks for insert / data / shortcuts |
 | [GRAPHIFY.md](GRAPHIFY.md) | Agents + humans | Code knowledge graph (`graphify`) usage |
 | [platforms/](platforms/) | Humans | How each IDE/CLI loads this pack |
-| [rules/emoji-picker.md](rules/emoji-picker.md) | Antigravity (+ mirrors) | Always-on workspace rule |
+| [rules/emoji-picker.md](rules/emoji-picker.md) | Antigravity | Always-on workspace rule |
 
 ## Design
 
 - **Canonical content lives only under `.agent/`.**
-- Root stubs (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, …) are thin pointers so each tool discovers the pack.
+- Root stubs (`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`) are thin pointers so each tool discovers the pack.
 - Do **not** duplicate long rules in every stub — edit here, keep stubs short.
 
 ## Quick rebuild (agents)

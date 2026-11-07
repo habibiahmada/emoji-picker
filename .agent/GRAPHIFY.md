@@ -26,7 +26,7 @@ Only run install commands when the user asks — they touch host config dirs.
 ## Build / refresh the graph (in this repo)
 
 ```bash
-cd /home/habibiahmada/Projects/emoji-picker
+cd ~/projects/emoji-picker
 graphify update .                 # code AST only (no LLM)
 # or in chat: /graphify
 ```

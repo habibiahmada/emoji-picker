@@ -43,8 +43,8 @@ toggles instantly, multi-pick without closing, paste into the **pre-picker** win
 ## Commands agents should use
 
 ```bash
-cd /home/habibiahmada/Projects/emoji-picker   # adjust if relocated
-./install.sh                                  # one-step install & shortcut setup
+cd ~/projects/emoji-picker   # adjust if relocated
+./install.sh                 # build if needed, install, shortcut setup
 # Or via make:
 make test && make install
 # smoke:
@@ -65,8 +65,8 @@ sed -i 's/\r$//' scripts/*
 ## UX contracts (do not break without asking)
 
 1. **Win+.** (Meta+period) toggles the picker — primary user binding.
-2. Picker **stays visible** on emoji click (multi-pick). Close only via Esc /
-   click-outside / focus-out when the user leaves the picker.
+2. Picker **stays visible** on emoji click (multi-pick). Close only when the user
+   leaves the picker (see 4).
 3. On emoji click: defer until GTK grab is gone; picker stays mapped with
    keep_above (no blink). Refuse accept_focus briefly; `windowfocus` + Ctrl+V
    (never windowactivate / hide). Clear CLIPBOARD ~450ms after paste.
@@ -99,7 +99,7 @@ sed -i 's/\r$//' scripts/*
 - `~/.local/bin/default-sink-volume.sh`
 - Soft left speaker: WirePlumber + `fix-left-speaker` user service
 
-Emoji picker is a **separate** project under `~/Projects/emoji-picker`.
+Emoji picker is a **separate** project under `~/projects/emoji-picker`.
 
 ## Style
 
