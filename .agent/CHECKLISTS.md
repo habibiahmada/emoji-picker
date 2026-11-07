@@ -12,7 +12,8 @@
 
 - [ ] `make data` from Unicode `latest` (or pinned `UNICODE_VER`)
 - [ ] Rebuild + restart user service
-- [ ] Spot-check search for a new emoji name
+- [ ] Spot-check search for a new emoji name and a keyword (e.g. `rock` → 🗿)
+- [ ] Missing everyday word? Add it to `data/keywords-extra.txt`, not CLDR files
 
 ## Shortcuts & Installation
 
