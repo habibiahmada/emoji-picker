@@ -4,17 +4,69 @@
 Base emoji fill the grid. Skin-tone variants (modifiers 1F3FB–1F3FF) go into a
 separate table linked from their base entry, so the grid stays one cell per
 emoji and the tone popup / saved tone preference picks the variant.
+
+Search keywords come from CLDR annotation files (any language) plus a small
+hand-kept file for everyday words CLDR lacks (🗿 → rock, stone).
 """
 from __future__ import annotations
 
 import re
 import sys
+import unicodedata
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # Fitzpatrick skin-tone modifiers → tone 1..5
 SKIN_TONES = {"1F3FB": 1, "1F3FC": 2, "1F3FD": 3, "1F3FE": 4, "1F3FF": 5}
 SKIP_GROUPS = frozenset({"Component"})
 TONE_PART_RE = re.compile(r"^(light|medium-light|medium|medium-dark|dark) skin tone$")
+WORD_SPLIT_RE = re.compile(r"[^a-z0-9]+")
+# Joining words that would only add noise matches.
+STOPWORDS = frozenset({"and", "of", "the", "with", "dan", "di", "ke", "dengan", "yang", "untuk"})
+
+
+def glyph_key(glyph: str) -> str:
+    """CLDR keys drop VS16; match on the same form."""
+    return glyph.replace("\ufe0f", "")
+
+
+def ascii_words(text: str) -> list[str]:
+    """'Café’s fire-truck' → ['cafes', 'fire', 'truck'] (search is ASCII)."""
+    text = unicodedata.normalize("NFKD", text.lower())
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    text = text.replace("\u2019", "").replace("'", "")
+    return [w for w in WORD_SPLIT_RE.split(text) if len(w) >= 2 and w not in STOPWORDS]
+
+
+def load_cldr(path: Path, out: dict[str, list[str]]) -> None:
+    """Keywords and the localized name (type="tts") of every annotation."""
+    for ann in ET.parse(path).getroot().iter("annotation"):
+        if ann.text:
+            out.setdefault(glyph_key(ann.get("cp", "")), []).extend(ascii_words(ann.text))
+
+
+def load_extra(path: Path, out: dict[str, list[str]]) -> list[str]:
+    """Lines of '<emoji> ; word word …'; '#' starts a comment. Returns keys."""
+    keys = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        glyph, _, words = line.partition(";")
+        keys.append(glyph_key(glyph.strip()))
+        out.setdefault(keys[-1], []).extend(ascii_words(words))
+    return keys
+
+
+def keywords_for(name: str, words: list[str]) -> str:
+    """Unique keywords not already in the name, first source first."""
+    seen = set(ascii_words(name))
+    kept = []
+    for w in words:
+        if w not in seen:
+            seen.add(w)
+            kept.append(w)
+    return " ".join(kept)
 
 
 def base_name(name: str) -> str:
@@ -40,16 +92,28 @@ def c_escape(s: str) -> str:
 
 
 def main() -> int:
-    if len(sys.argv) != 4:
+    args = sys.argv[1:]
+    extra: Path | None = None
+    if "--keywords" in args:
+        i = args.index("--keywords")
+        extra = Path(args[i + 1])
+        del args[i : i + 2]
+    if len(args) < 3:
         print(
-            f"usage: {sys.argv[0]} emoji-test.txt out.h out.c",
+            f"usage: {sys.argv[0]} emoji-test.txt out.h out.c "
+            "[--keywords extra.txt] [cldr-annotations.xml ...]",
             file=sys.stderr,
         )
         return 2
 
-    src = Path(sys.argv[1])
-    out_h = Path(sys.argv[2])
-    out_c = Path(sys.argv[3])
+    src = Path(args[0])
+    out_h = Path(args[1])
+    out_c = Path(args[2])
+
+    keyword_src: dict[str, list[str]] = {}
+    for path in args[3:]:
+        load_cldr(Path(path), keyword_src)
+    extra_keys = load_extra(extra, keyword_src) if extra else []
 
     group = "Other"
     categories: list[str] = []
@@ -133,6 +197,7 @@ def main() -> int:
 typedef struct {{
     const char *glyph;    /* UTF-8 emoji */
     const char *name;     /* English name from Unicode (lowercase) */
+    const char *keywords; /* extra ASCII search words, space-separated */
     int category;         /* index into emoji_categories */
     uint16_t version;     /* Emoji version x10 (E13.1 → 131) */
     uint16_t tones_start; /* index into emoji_tone_variants */
@@ -181,11 +246,18 @@ extern const EmojiToneVariant emoji_tone_variants[EMOJI_TONE_VARIANT_COUNT];
     lines.append("};")
     lines.append("")
     lines.append("const EmojiEntry emoji_entries[EMOJI_COUNT] = {")
+    with_keywords = 0
+    known = {glyph_key(e[0]) for e in emojis}
+    for key in extra_keys:
+        if key not in known:
+            print(f"warning: extra keywords for unknown emoji {key!r}", file=sys.stderr)
     for i, (glyph, name, cat, ver) in enumerate(emojis):
         start, count = tone_link.get(i, (0, 0))
+        kw = keywords_for(name, keyword_src.get(glyph_key(glyph), []))
+        with_keywords += bool(kw)
         lines.append(
-            f'    {{"{c_escape(glyph)}", "{c_escape(name)}", {cat}, {ver}, '
-            f"{start}, {count}}},"
+            f'    {{"{c_escape(glyph)}", "{c_escape(name)}", "{c_escape(kw)}", '
+            f"{cat}, {ver}, {start}, {count}}},"
         )
     lines.append("};")
     lines.append("")
@@ -200,7 +272,8 @@ extern const EmojiToneVariant emoji_tone_variants[EMOJI_TONE_VARIANT_COUNT];
 
     print(
         f"categories={len(categories)} emojis={len(emojis)} "
-        f"tone_variants={len(tone_rows)} with_tones={len(tone_link)}",
+        f"tone_variants={len(tone_rows)} with_tones={len(tone_link)} "
+        f"with_keywords={with_keywords}",
         file=sys.stderr,
     )
     return 0

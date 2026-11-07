@@ -6,12 +6,13 @@
 #include <stdint.h>
 
 #define EMOJI_CATEGORY_COUNT 9
-#define EMOJI_COUNT 1914
-#define EMOJI_TONE_VARIANT_COUNT 2030
+#define EMOJI_COUNT 1923
+#define EMOJI_TONE_VARIANT_COUNT 2040
 
 typedef struct {
     const char *glyph;    /* UTF-8 emoji */
     const char *name;     /* English name from Unicode (lowercase) */
+    const char *keywords; /* extra ASCII search words, space-separated */
     int category;         /* index into emoji_categories */
     uint16_t version;     /* Emoji version x10 (E13.1 → 131) */
     uint16_t tones_start; /* index into emoji_tone_variants */

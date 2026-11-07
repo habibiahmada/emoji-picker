@@ -26,10 +26,23 @@ static void test_ascii_word(void) {
     TEST_ASSERT(search_token_is_ascii_word("") == 0);
 }
 
-static void test_name_tokens(void) {
-    char tokens[2][64] = {"grin", "face"};
-    TEST_ASSERT(search_name_has_all_tokens("grinning face", tokens, 2));
-    TEST_ASSERT(!search_name_has_all_tokens("smiling face", tokens, 2));
+static void test_token_score_order(void) {
+    const char *kw = "face moyai statue stoneface";
+    TEST_ASSERT(search_token_score("moai", kw, "moai") == 5);
+    TEST_ASSERT(search_token_score("grinning face", NULL, "face") == 4);
+    TEST_ASSERT(search_token_score("moai", kw, "statue") == 3);
+    TEST_ASSERT(search_token_score("grinning face", NULL, "grin") == 2);
+    TEST_ASSERT(search_token_score("moai", kw, "stone") == 1);
+    TEST_ASSERT(search_token_score("grinning face", NULL, "inning") == 1);
+    TEST_ASSERT(search_token_score("moai", kw, "rock") == 0);
+}
+
+static void test_token_score_word_bounds(void) {
+    /* "flag:" and "piñata" are single words; the colon is not part of it. */
+    TEST_ASSERT(search_token_score("flag: indonesia", NULL, "flag") == 4);
+    TEST_ASSERT(search_token_score("piñata", NULL, "pi") == 2);
+    TEST_ASSERT(search_token_score("piñata", NULL, "ata") == 1);
+    TEST_ASSERT(search_token_score("moai", "", "") == 0);
 }
 
 static void test_ascii_lower_preserves_emoji(void) {
@@ -42,7 +55,8 @@ int main(void) {
     TEST_RUN(test_tokenize_basic);
     TEST_RUN(test_tokenize_hyphen_lower);
     TEST_RUN(test_ascii_word);
-    TEST_RUN(test_name_tokens);
+    TEST_RUN(test_token_score_order);
+    TEST_RUN(test_token_score_word_bounds);
     TEST_RUN(test_ascii_lower_preserves_emoji);
     return test_finish();
 }

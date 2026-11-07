@@ -10,6 +10,7 @@ dist/
 
 # Fetched Unicode dump (regenerate with make data)
 data/emoji-test.txt
+data/cldr/
 
 # Graphify generated knowledge graph
 graphify-out/

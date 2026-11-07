@@ -22,6 +22,7 @@ toggles instantly, multi-pick without closing, paste into the **pre-picker** win
 | Concern | Location |
 |---------|----------|
 | Emoji glyphs + names | `data/emoji-test.txt` → `scripts/generate_emoji_data.py` → `src/generated/*` |
+| Search keywords | CLDR `data/cldr/*.xml` (fetched, en + id) + `data/keywords-extra.txt` (hand-kept) → generator |
 | UI shell | `src/ui/popup.c` |
 | Grid / CSS | `src/ui/picker_grid.c` |
 | Dismiss poll | `src/ui/picker_dismiss.c` |
@@ -67,7 +68,9 @@ sed -i 's/\r$//' scripts/*
 4. Esc / click-outside / typing in the target app / Alt+Tab to another app hides
    the window (dismiss poll — not focus-out alone). Process remains as daemon.
 5. Skip taskbar / utility window; place near pointer.
-6. Search matches Unicode English names (stored lowercase).
+6. Search matches Unicode English names (stored lowercase) and per-emoji keywords
+   (CLDR en + id, plus `data/keywords-extra.txt`). Every query word must match;
+   order: whole name > name word > keyword > name-word prefix > other.
 7. History tab shows recent picks when available; do not remove casually.
    It shows the exact glyph picked (tone included) and inserts it as-is.
 8. Skin tone: grid shows the base (yellow) glyph until a tone is chosen. The
