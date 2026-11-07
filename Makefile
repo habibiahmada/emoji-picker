@@ -30,8 +30,7 @@ APP_SRC := \
 all: emoji-picker
 
 data:
-	chmod +x scripts/fetch-unicode-emoji.sh scripts/generate_emoji_data.py
-	./scripts/fetch-unicode-emoji.sh
+	bash scripts/fetch-unicode-emoji.sh
 
 src/generated/emoji_data.c src/generated/emoji_data.h:
 	$(MAKE) data
@@ -70,8 +69,7 @@ test: test_search_query test_history test_emoji_model test_skin_tone test_grid_l
 
 dist:
 	@test -n "$(VERSION)" || (echo "Usage: make dist VERSION=0.1.0" >&2; exit 2)
-	chmod +x scripts/release.sh
-	./scripts/release.sh $(VERSION)
+	bash scripts/release.sh $(VERSION)
 
 install: emoji-picker
 	chmod +x install.sh
