@@ -51,6 +51,11 @@ make test && make install
 emoji-picker --toggle
 ```
 
+End users install with `get.sh` (one line, no clone): it downloads the latest
+release tarball, verifies the `.sha256` and runs the bundled `install.sh`. Keep
+`get.sh` POSIX `sh` (it is piped to `sh`) and keep its tarball/checksum names in
+sync with `scripts/release.sh`; `tests/test_install.sh` covers it offline.
+
 Scripts must be LF (not CRLF). If `env: 'bash\r'` appears:
 
 ```bash
