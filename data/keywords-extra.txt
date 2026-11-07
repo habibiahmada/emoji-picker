@@ -1,0 +1,41 @@
+# Everyday search words CLDR does not list (English + Indonesian slang).
+# Format: <emoji> ; word word ...   (one emoji per line, LF endings)
+# Applied on `make data`; words already in the name or CLDR are skipped.
+
+# Faces
+😂 ; wkwk wkwkwk lmao
+🤣 ; wkwk wkwkwk ngakak
+😆 ; xd
+😳 ; bengong melongo
+🫪 ; plenger bengong melongo
+😐 ; bengong datar
+😶 ; diam speechless
+🥺 ; please pleading
+😭 ; mewek
+💀 ; mampus dead lmao
+😎 ; santuy santai
+😌 ; santuy lega
+😔 ; galau
+💔 ; galau patah hati
+🙃 ; sarkas
+🤔 ; mikir hmm
+🤡 ; badut
+🥶 ; dingin
+🥵 ; gerah
+
+# Gestures
+👍 ; mantap sip
+👌 ; mantap
+💪 ; semangat kuat
+🔥 ; gas semangat mantap
+🙏 ; makasih tolong please
+🫡 ; siap hormat
+🤝 ; deal sepakat
+
+# Objects & places
+🗿 ; rock stone batu
+🪨 ; batu
+🎂 ; ultah birthday
+🎉 ; ultah selamat
+🏍️ ; otw motor
+🚗 ; otw
